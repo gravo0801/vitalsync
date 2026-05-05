@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+:root {
+  --background: #09090b;
+  --foreground: #fafafa;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* 다크 모드 기본 스타일 */
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+}
+
+/* 커스텀 스타일 (선택) */
+input[type="date"],
+input[type="number"] {
+  color-scheme: dark;
+}
