@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 /* ============================================
+   ⭐ Tailwind CSS 4 - dark variant를 .dark 클래스 기반으로 설정
+   v3까지는 자동이었지만 v4부터 명시 필요
+   ============================================ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================
    디자인 토큰 — Gravo finance / Claude.com 톤
    ============================================ */
 
@@ -18,10 +24,10 @@
   --color-cream-300: #d6cab2;
 
   /* 다크 베이스 - 깊은 차콜 */
+  --color-ink-700: #403c38;
+  --color-ink-800: #2a2725;
   --color-ink-900: #1a1817;
   --color-ink-950: #0f0e0d;
-  --color-ink-800: #2a2725;
-  --color-ink-700: #403c38;
 
   /* 액센트 - earthy/muted */
   --color-sage-400: #9ab089;
@@ -48,25 +54,26 @@
 }
 
 /* ============================================
-   글로벌 스타일
+   글로벌 스타일 - 가독성 보강
    ============================================ */
 
 :root {
   --background: var(--color-cream-100);
-  --foreground: var(--color-ink-900);
+  --foreground: #1a1817;
   --card: #ffffff;
-  --card-border: rgb(0 0 0 / 0.06);
-  --muted: rgb(0 0 0 / 0.55);
-  --muted-foreground: rgb(0 0 0 / 0.65);
+  --card-border: rgb(0 0 0 / 0.08);
+  /* ⭐ muted를 더 진하게 - 가독성 보강 */
+  --muted: rgb(0 0 0 / 0.62);
+  --muted-foreground: rgb(0 0 0 / 0.78);
 }
 
 .dark {
   --background: var(--color-ink-950);
-  --foreground: #e8e2d6;
+  --foreground: #ede6d8;
   --card: var(--color-ink-900);
-  --card-border: rgb(255 255 255 / 0.07);
-  --muted: rgb(255 255 255 / 0.55);
-  --muted-foreground: rgb(255 255 255 / 0.65);
+  --card-border: rgb(255 255 255 / 0.1);
+  --muted: rgb(255 255 255 / 0.62);
+  --muted-foreground: rgb(255 255 255 / 0.78);
 }
 
 html {
@@ -97,11 +104,11 @@ p, li, span, label, input, textarea, button {
 .serif-italic {
   font-family: var(--font-serif);
   font-style: italic;
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: -0.005em;
 }
 
-/* input 가독성 - 다크/라이트 모두 명시적으로 */
+/* ⭐ input 가독성 - 명시적으로 다크/라이트 색상 분리 */
 input,
 textarea,
 select {
@@ -139,12 +146,12 @@ select {
   scrollbar-width: none;
 }
 
-/* placeholder 차분하게 */
+/* placeholder 차분하게 - 단, 너무 흐리지 않게 */
 ::placeholder {
-  color: rgb(0 0 0 / 0.35);
+  color: rgb(0 0 0 / 0.4);
 }
 .dark ::placeholder {
-  color: rgb(255 255 255 / 0.35);
+  color: rgb(255 255 255 / 0.4);
 }
 
 /* focus ring */
@@ -159,8 +166,8 @@ select {
   height: 4px;
   border-radius: 2px;
   overflow: hidden;
-  background: rgb(0 0 0 / 0.06);
+  background: rgb(0 0 0 / 0.08);
 }
 .dark .progress-bar {
-  background: rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.1);
 }

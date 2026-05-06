@@ -8,10 +8,11 @@ export const metadata: Metadata = {
 };
 
 // hydration mismatch 방지 - 첫 렌더링 전에 localStorage 읽어 dark 클래스 미리 부착
+// ⭐ v0.3: 키 이름을 'vitalsync-theme-v3'로 변경하여 v0.2의 잘못된 dark 설정 잔재 차단
 const themeScript = `
   (function() {
     try {
-      var t = localStorage.getItem('vitalsync-theme') || 'light';
+      var t = localStorage.getItem('vitalsync-theme-v3') || 'light';
       if (t === 'dark') document.documentElement.classList.add('dark');
       else document.documentElement.classList.remove('dark');
     } catch(e) {}
