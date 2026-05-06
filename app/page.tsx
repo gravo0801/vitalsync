@@ -42,12 +42,14 @@ export default function VitalSyncDashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+  // 테마 상태
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
-  // ==================== 테마 토글 ====================
+  // ==================== 테마 토글 (수정) ====================
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
+
     if (newTheme === "light") {
       document.documentElement.classList.remove("dark");
     } else {
@@ -96,14 +98,26 @@ export default function VitalSyncDashboard() {
     return () => { unsubWeights(); unsubMeals(); unsubWorkouts(); };
   }, [user]);
 
-  // ==================== 몸무게 추가 (개선) ====================
+  // ==================== 몸무게 추가 (수정 - 더 안정적으로) ====================
   const addWeight = async () => {
-    if (!newWeight || !user) return;
+    if (!user) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    if (!newWeight) {
+      alert("몸무게를 입력해주세요.");
+      return;
+    }
+
     const weightNum = parseFloat(newWeight);
 
     try {
       // 같은 날짜 기존 데이터 삭제
-      const q = query(collection(db, "weights"), where("userId", "==", user.uid), where("date", "==", newDate));
+      const q = query(
+        collection(db, "weights"),
+        where("userId", "==", user.uid),
+        where("date", "==", newDate)
+      );
       const snap = await getDocs(q);
       await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "weights", d.id))));
 
@@ -115,23 +129,22 @@ export default function VitalSyncDashboard() {
         createdAt: Timestamp.now(),
       });
 
-      // 상태 즉시 업데이트 + 모달 닫기
+      // 모달 닫기 + 입력 초기화
       setNewWeight("");
       setIsModalOpen(false);
 
     } catch (error) {
       console.error("Error adding weight:", error);
-      alert("저장에 실패했습니다.");
+      alert("저장에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
-  // ==================== 식사 업로드 (개선) ====================
+  // ==================== 식사 업로드 ====================
   const addMeal = async () => {
     if (!user || !mealPhoto) {
       alert("사진을 선택해주세요!");
       return;
     }
-
     setUploading(true);
 
     try {
@@ -148,21 +161,19 @@ export default function VitalSyncDashboard() {
         createdAt: Timestamp.now(),
       });
 
-      // 상태 초기화 + 모달 닫기
       setIsMealModalOpen(false);
       setMealPhoto(null);
       setMealCalories("");
       setMealType("아침");
-
     } catch (error) {
-      console.error("Error adding meal:", error);
+      console.error(error);
       alert("업로드에 실패했습니다.");
     } finally {
       setUploading(false);
     }
   };
 
-  // ==================== 운동 기록 저장 ====================
+  // ==================== 운동 기록 ====================
   const saveWorkout = async (date: string, duration: number, notes: string) => {
     if (!user) return;
 
@@ -174,7 +185,6 @@ export default function VitalSyncDashboard() {
       await addDoc(collection(db, "workouts"), {
         userId: user.uid, date, duration, notes, createdAt: Timestamp.now()
       });
-
       alert("운동 기록이 저장되었습니다!");
       setIsCalendarModalOpen(false);
     } catch (error) {
@@ -232,7 +242,7 @@ export default function VitalSyncDashboard() {
             {/* 몸무게 버튼 */}
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 rounded-2xl text-sm font-medium active:scale-95 transition-all"
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 rounded-2xl text-sm font-medium active:scale-95"
             >
               <Plus size={18} /> 몸무게
             </button>
@@ -240,7 +250,7 @@ export default function VitalSyncDashboard() {
             {/* 식사 버튼 */}
             <button 
               onClick={() => setIsMealModalOpen(true)}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 px-5 py-2.5 rounded-2xl text-sm font-medium active:scale-95 transition-all"
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 px-5 py-2.5 rounded-2xl text-sm font-medium active:scale-95"
             >
               <Plus size={18} /> 식사
             </button>
