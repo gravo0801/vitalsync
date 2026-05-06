@@ -18,7 +18,7 @@ interface WeightData { id: string; date: string; weight: number; createdAt: any;
 interface MealData { id: string; date: string; mealType: string; calories: number | null; photoURL?: string; createdAt: any; }
 interface WorkoutData { id: string; date: string; duration: number; notes: string; createdAt: any; }
 
-const PERSONAL_USER_ID = "personal-user";   // 로그인 제거용 고정 ID
+const PERSONAL_USER_ID = "personal-user";
 
 export default function VitalSyncDashboard() {
   const [weights, setWeights] = useState<WeightData[]>([]);
@@ -173,10 +173,14 @@ export default function VitalSyncDashboard() {
   if (loading) return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
 
   return (
-    <div className={`min-h-screen ${theme === "dark" ? "bg-zinc-950 text-zinc-100" : "bg-zinc-50 text-zinc-900"}`}>
+    <div className={`min-h-screen transition-colors ${theme === "dark" 
+      ? "bg-zinc-950 text-zinc-100" 
+      : "bg-amber-50 text-stone-900"}`}>
 
       {/* 헤더 */}
-      <header className={`border-b ${theme === "dark" ? "border-zinc-800 bg-zinc-950/80" : "border-zinc-200 bg-white/80"} backdrop-blur-md sticky top-0 z-50`}>
+      <header className={`border-b backdrop-blur-md sticky top-0 z-50 ${theme === "dark" 
+        ? "border-zinc-800 bg-zinc-950/90" 
+        : "border-amber-200 bg-amber-100/90"}`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
@@ -186,7 +190,7 @@ export default function VitalSyncDashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button onClick={toggleTheme} className="p-2 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
+            <button onClick={toggleTheme} className="p-2 rounded-xl hover:bg-amber-200 dark:hover:bg-zinc-800 transition-colors">
               {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
@@ -203,13 +207,13 @@ export default function VitalSyncDashboard() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-8">
-          <p className="text-zinc-500 dark:text-zinc-400">안녕하세요, 그라비타님 👋</p>
+          <p className="text-amber-700 dark:text-zinc-400">안녕하세요, 그라비타님 👋</p>
           <h2 className="text-3xl font-semibold tracking-tight mt-1">오늘도 좋은 하루 되세요</h2>
         </div>
 
         {/* 요약 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-zinc-200 shadow"}`}>
+          <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-amber-200 shadow-sm"}`}>
             <div className="flex items-center gap-3 text-emerald-500 mb-2">
               <TrendingDown className="w-5 h-5" />
               <span className="text-sm font-medium">현재 체중</span>
@@ -217,23 +221,23 @@ export default function VitalSyncDashboard() {
             <div className="text-5xl font-semibold tracking-tighter">{latestWeight} kg</div>
             <p className="text-emerald-400 text-sm mt-1">최근 {weightChange}kg</p>
           </div>
-          <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-zinc-200 shadow"}`}>
-            <div className="flex items-center gap-3 text-zinc-500 mb-2">
+          <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-amber-200 shadow-sm"}`}>
+            <div className="flex items-center gap-3 text-stone-500 mb-2">
               <CalendarIcon className="w-5 h-5" />
               <span className="text-sm font-medium">기록일</span>
             </div>
             <div className="text-5xl font-semibold tracking-tighter">{weights.length}일</div>
           </div>
-          <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-zinc-200 shadow"} flex items-center justify-center`}>
+          <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-amber-200 shadow-sm"} flex items-center justify-center`}>
             <div className="text-center">
-              <p className="text-zinc-500 text-sm mb-1">다음 목표</p>
+              <p className="text-stone-500 text-sm mb-1">다음 목표</p>
               <p className="text-3xl font-semibold">68.0 kg</p>
             </div>
           </div>
         </div>
 
         {/* 그래프 */}
-        <div className={`rounded-3xl p-6 mb-8 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-zinc-200 shadow"}`}>
+        <div className={`rounded-3xl p-6 mb-8 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-amber-200 shadow-sm"}`}>
           <h3 className="font-semibold text-xl mb-4">체중 변화 추이</h3>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -248,21 +252,55 @@ export default function VitalSyncDashboard() {
           </div>
         </div>
 
+        {/* 최근 기록 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-amber-200 shadow-sm"}`}>
+            <h3 className="font-semibold mb-4">최근 체중 기록</h3>
+            {weights.length === 0 ? <p className="text-stone-400">기록이 없습니다.</p> : (
+              <div className="space-y-2">
+                {weights.slice().reverse().slice(0, 5).map((item, index) => (
+                  <div key={index} className={`flex justify-between items-center px-4 py-3 rounded-2xl ${theme === "dark" ? "bg-zinc-950" : "bg-amber-50"}`}>
+                    <span>{format(new Date(item.date), "yyyy년 MM월 dd일", { locale: ko })}</span>
+                    <span className="font-mono font-semibold">{item.weight} kg</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-amber-200 shadow-sm"}`}>
+            <h3 className="font-semibold mb-4">최근 식사 기록</h3>
+            {meals.length === 0 ? <p className="text-stone-400">기록이 없습니다.</p> : (
+              <div className="space-y-3">
+                {meals.slice(0, 4).map((meal) => (
+                  <div key={meal.id} className={`flex gap-4 rounded-2xl overflow-hidden ${theme === "dark" ? "bg-zinc-950" : "bg-amber-50"}`}>
+                    {meal.photoURL && <img src={meal.photoURL} className="w-20 h-20 object-cover" />}
+                    <div className="py-3">
+                      <div className="font-semibold">{meal.mealType}</div>
+                      {meal.calories && <div className="text-emerald-400 text-sm">{meal.calories} kcal</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* 캘린더 */}
-        <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-zinc-200 shadow"}`}>
+        <div className={`rounded-3xl p-6 ${theme === "dark" ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-amber-200 shadow-sm"}`}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-semibold text-xl flex items-center gap-2">
               <CalendarIcon className="w-6 h-6" /> 캘린더
             </h3>
             <div className="flex items-center gap-2 text-sm">
-              <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl"><ChevronLeft /></button>
+              <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-amber-200 dark:hover:bg-zinc-800 rounded-xl"><ChevronLeft /></button>
               <span className="font-medium w-44 text-center">{format(currentMonth, "yyyy년 MM월", { locale: ko })}</span>
-              <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl"><ChevronRight /></button>
+              <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-amber-200 dark:hover:bg-zinc-800 rounded-xl"><ChevronRight /></button>
             </div>
           </div>
 
           <div className="grid grid-cols-7 gap-1 text-center text-sm">
-            {["일", "월", "화", "수", "목", "금", "토"].map(d => <div key={d} className="font-medium text-zinc-500 py-2">{d}</div>)}
+            {["일", "월", "화", "수", "목", "금", "토"].map(d => <div key={d} className="font-medium text-stone-500 py-2">{d}</div>)}
             {Array.from({ length: getDay(monthStart) }).map((_, i) => <div key={i} />)}
             {daysInMonth.map(day => {
               const dateStr = format(day, "yyyy-MM-dd");
@@ -271,7 +309,7 @@ export default function VitalSyncDashboard() {
                 <button
                   key={dateStr}
                   onClick={() => { setSelectedDate(dateStr); setIsCalendarModalOpen(true); }}
-                  className={`h-14 flex flex-col items-center justify-center rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 relative ${theme === "dark" ? "text-zinc-100" : "text-zinc-900"}`}
+                  className={`h-14 flex flex-col items-center justify-center rounded-xl hover:bg-amber-200 dark:hover:bg-zinc-800 relative ${theme === "dark" ? "text-zinc-100" : "text-stone-900"}`}
                 >
                   <span>{format(day, "d")}</span>
                   <div className="flex gap-1 mt-1">
@@ -288,20 +326,20 @@ export default function VitalSyncDashboard() {
       {/* 몸무게 모달 */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className={`rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md p-8 ${theme === "dark" ? "bg-zinc-900 border border-zinc-700" : "bg-white border border-zinc-200 shadow-xl"}`}>
+          <div className={`rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md p-8 ${theme === "dark" ? "bg-zinc-900 border border-zinc-700" : "bg-white border border-amber-200 shadow-xl"}`}>
             <h3 className="text-2xl font-semibold mb-6">몸무게 기록하기</h3>
             <div className="space-y-5">
               <div>
-                <label className="text-sm text-zinc-500 mb-1.5 block">날짜</label>
-                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-2xl px-4 py-3" />
+                <label className="text-sm text-stone-500 mb-1.5 block">날짜</label>
+                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full bg-white dark:bg-zinc-950 border border-stone-300 dark:border-zinc-700 rounded-2xl px-4 py-3" />
               </div>
               <div>
-                <label className="text-sm text-zinc-500 mb-1.5 block">체중 (kg)</label>
-                <input type="number" step="0.1" value={newWeight} onChange={e => setNewWeight(e.target.value)} placeholder="70.5" className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-2xl px-4 py-3 text-3xl font-semibold" />
+                <label className="text-sm text-stone-500 mb-1.5 block">체중 (kg)</label>
+                <input type="number" step="0.1" value={newWeight} onChange={e => setNewWeight(e.target.value)} placeholder="70.5" className="w-full bg-white dark:bg-zinc-950 border border-stone-300 dark:border-zinc-700 rounded-2xl px-4 py-3 text-3xl font-semibold" />
               </div>
             </div>
             <div className="flex gap-3 mt-8">
-              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-3xl bg-zinc-200 dark:bg-zinc-800">취소</button>
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-3xl bg-stone-200 dark:bg-zinc-800">취소</button>
               <button onClick={addWeight} disabled={!newWeight} className="flex-1 py-4 rounded-3xl bg-emerald-500 text-white disabled:opacity-50">기록하기</button>
             </div>
           </div>
@@ -311,12 +349,12 @@ export default function VitalSyncDashboard() {
       {/* 식사 모달 */}
       {isMealModalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-[60] p-4">
-          <div className={`rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md p-8 ${theme === "dark" ? "bg-zinc-900 border border-zinc-700" : "bg-white border border-zinc-200 shadow-xl"}`}>
+          <div className={`rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md p-8 ${theme === "dark" ? "bg-zinc-900 border border-zinc-700" : "bg-white border border-amber-200 shadow-xl"}`}>
             <h3 className="text-2xl font-semibold mb-6">식사 기록하기</h3>
             <div className="space-y-5">
               <div>
-                <label className="text-sm text-zinc-500 mb-1.5 block">식사 종류</label>
-                <select value={mealType} onChange={e => setMealType(e.target.value)} className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-2xl px-4 py-3">
+                <label className="text-sm text-stone-500 mb-1.5 block">식사 종류</label>
+                <select value={mealType} onChange={e => setMealType(e.target.value)} className="w-full bg-white dark:bg-zinc-950 border border-stone-300 dark:border-zinc-700 rounded-2xl px-4 py-3">
                   <option value="아침">아침</option>
                   <option value="점심">점심</option>
                   <option value="저녁">저녁</option>
@@ -324,17 +362,17 @@ export default function VitalSyncDashboard() {
                 </select>
               </div>
               <div>
-                <label className="text-sm text-zinc-500 mb-1.5 block">칼로리 (선택)</label>
-                <input type="number" value={mealCalories} onChange={e => setMealCalories(e.target.value)} placeholder="650" className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-2xl px-4 py-3" />
+                <label className="text-sm text-stone-500 mb-1.5 block">칼로리 (선택)</label>
+                <input type="number" value={mealCalories} onChange={e => setMealCalories(e.target.value)} placeholder="650" className="w-full bg-white dark:bg-zinc-950 border border-stone-300 dark:border-zinc-700 rounded-2xl px-4 py-3" />
               </div>
               <div>
-                <label className="text-sm text-zinc-500 mb-1.5 block">식사 사진 (선택)</label>
+                <label className="text-sm text-stone-500 mb-1.5 block">식사 사진 (선택)</label>
                 <input type="file" accept="image/*" onChange={e => setMealPhoto(e.target.files?.[0] || null)} className="w-full" />
                 {mealPhoto && <p className="text-emerald-400 text-sm mt-2">{mealPhoto.name}</p>}
               </div>
             </div>
             <div className="flex gap-3 mt-8">
-              <button onClick={() => setIsMealModalOpen(false)} className="flex-1 py-4 rounded-3xl bg-zinc-200 dark:bg-zinc-800">취소</button>
+              <button onClick={() => setIsMealModalOpen(false)} className="flex-1 py-4 rounded-3xl bg-stone-200 dark:bg-zinc-800">취소</button>
               <button onClick={addMeal} className="flex-1 py-4 rounded-3xl bg-emerald-500 text-white">기록하기</button>
             </div>
           </div>
