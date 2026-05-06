@@ -42,10 +42,9 @@ export default function VitalSyncDashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // 테마 상태
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
-  // ==================== 테마 토글 (수정) ====================
+  // ==================== 테마 토글 ====================
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
@@ -57,7 +56,7 @@ export default function VitalSyncDashboard() {
     }
   };
 
-  // ==================== 인증 ====================
+  // ==================== 인증 (개선) ====================
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -98,12 +97,19 @@ export default function VitalSyncDashboard() {
     return () => { unsubWeights(); unsubMeals(); unsubWorkouts(); };
   }, [user]);
 
-  // ==================== 몸무게 추가 (수정 - 더 안정적으로) ====================
+  // ==================== 몸무게 추가 (수정 완료) ====================
   const addWeight = async () => {
     if (!user) {
-      alert("로그인이 필요합니다.");
-      return;
+      // user가 아직 없으면 익명 로그인 시도
+      const auth = getAuth();
+      try {
+        await signInAnonymously(auth);
+      } catch (e) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
     }
+
     if (!newWeight) {
       alert("몸무게를 입력해주세요.");
       return;
@@ -115,7 +121,7 @@ export default function VitalSyncDashboard() {
       // 같은 날짜 기존 데이터 삭제
       const q = query(
         collection(db, "weights"),
-        where("userId", "==", user.uid),
+        where("userId", "==", user!.uid),
         where("date", "==", newDate)
       );
       const snap = await getDocs(q);
@@ -123,19 +129,18 @@ export default function VitalSyncDashboard() {
 
       // 새 데이터 추가
       await addDoc(collection(db, "weights"), {
-        userId: user.uid,
+        userId: user!.uid,
         date: newDate,
         weight: weightNum,
         createdAt: Timestamp.now(),
       });
 
-      // 모달 닫기 + 입력 초기화
       setNewWeight("");
       setIsModalOpen(false);
 
     } catch (error) {
       console.error("Error adding weight:", error);
-      alert("저장에 실패했습니다. 다시 시도해주세요.");
+      alert("저장에 실패했습니다.");
     }
   };
 
