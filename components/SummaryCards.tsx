@@ -144,6 +144,6 @@ export function Card({
 
 export function CardLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-xs text-[color:var(--muted)] tracking-wide">{children}</div>
+    <div className="text-xs font-medium text-[color:var(--muted-foreground)] tracking-wide">{children}</div>
   );
 }
