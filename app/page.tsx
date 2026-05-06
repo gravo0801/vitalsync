@@ -14,20 +14,21 @@ import { getAuth, onAuthStateChanged, signInAnonymously, User } from "firebase/a
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 
-// ==================== 타입 ====================
+// ==================== 타입 정의 ====================
 interface WeightData { id: string; userId: string; date: string; weight: number; createdAt: any; }
 interface MealData { id: string; userId: string; date: string; mealType: string; calories: number | null; photoURL: string; createdAt: any; }
 interface WorkoutData { id: string; userId: string; date: string; duration: number; notes: string; createdAt: any; }
 
 export default function VitalSyncDashboard() {
-  // ==================== 상태 ====================
+
+  // ==================== 상태 관리 ====================
   const [weights, setWeights] = useState<WeightData[]>([]);
   const [meals, setMeals] = useState<MealData[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutData[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 모달
+  // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
@@ -53,7 +54,6 @@ export default function VitalSyncDashboard() {
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
-
     if (newTheme === "light") {
       document.documentElement.classList.remove("dark");
     } else {
@@ -102,7 +102,7 @@ export default function VitalSyncDashboard() {
     return () => { unsubWeights(); unsubMeals(); unsubWorkouts(); };
   }, [user]);
 
-  // ==================== 함수 ====================
+  // ==================== 몸무게 추가 ====================
   const addWeight = async () => {
     if (!newWeight || !user) return;
     const weightNum = parseFloat(newWeight);
@@ -122,6 +122,7 @@ export default function VitalSyncDashboard() {
     }
   };
 
+  // ==================== 식사 사진 업로드 ====================
   const addMeal = async () => {
     if (!user || !mealPhoto) {
       alert("사진을 선택해주세요!");
@@ -155,6 +156,7 @@ export default function VitalSyncDashboard() {
     }
   };
 
+  // ==================== 운동 기록 저장 ====================
   const saveWorkout = async (date: string, duration: number, notes: string) => {
     if (!user) return;
 
@@ -174,7 +176,7 @@ export default function VitalSyncDashboard() {
     }
   };
 
-  // ==================== 계산 ====================
+  // ==================== 계산 값 ====================
   const chartData = weights.map(item => ({
     date: format(new Date(item.date), "MM/dd"),
     weight: item.weight,
@@ -184,7 +186,7 @@ export default function VitalSyncDashboard() {
   const firstWeight = weights.length > 0 ? weights[0].weight : 0;
   const weightChange = weights.length > 0 ? (latestWeight - firstWeight).toFixed(1) : "0.0";
 
-  // 캘린더
+  // ==================== 캘린더 관련 ====================
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -201,10 +203,11 @@ export default function VitalSyncDashboard() {
     return <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">로딩 중...</div>;
   }
 
-  // ==================== 화면 ====================
+  // ==================== 화면 렌더링 ====================
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* 헤더 */}
+
+      {/* ==================== 헤더 ==================== */}
       <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -215,24 +218,23 @@ export default function VitalSyncDashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* 테마 토글 */}
-            <button 
-              onClick={toggleTheme} 
-              className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
-            >
+            {/* 테마 토글 버튼 */}
+            <button onClick={toggleTheme} className="p-2 rounded-xl hover:bg-zinc-800 transition-colors">
               {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
-            {/* 상단 버튼 */}
+            {/* 몸무게 버튼 */}
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 rounded-2xl text-sm font-medium transition-all active:scale-95"
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 rounded-2xl text-sm font-medium active:scale-95 transition-all"
             >
               <Plus size={18} /> 몸무게
             </button>
+
+            {/* 식사 버튼 */}
             <button 
               onClick={() => setIsMealModalOpen(true)}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 px-5 py-2.5 rounded-2xl text-sm font-medium transition-all active:scale-95"
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 px-5 py-2.5 rounded-2xl text-sm font-medium active:scale-95 transition-all"
             >
               <Plus size={18} /> 식사
             </button>
@@ -241,6 +243,7 @@ export default function VitalSyncDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+
         {/* 상단 인사 */}
         <div className="mb-8">
           <p className="text-zinc-400">안녕하세요, 그라비타님 👋</p>
@@ -290,8 +293,8 @@ export default function VitalSyncDashboard() {
           </div>
         </div>
 
-        {/* 최근 기록 + 캘린더 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* 최근 기록 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* 최근 체중 */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
             <h3 className="font-semibold mb-4">최근 체중 기록</h3>
@@ -331,43 +334,29 @@ export default function VitalSyncDashboard() {
         </div>
 
         {/* ==================== 캘린더 ==================== */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mt-8">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-semibold text-xl flex items-center gap-2">
               <CalendarIcon className="w-6 h-6" /> 캘린더
             </h3>
             <div className="flex items-center gap-2 text-sm">
-              <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-zinc-800 rounded-xl">
-                <ChevronLeft />
-              </button>
-              <span className="font-medium w-44 text-center">
-                {format(currentMonth, "yyyy년 MM월", { locale: ko })}
-              </span>
-              <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-zinc-800 rounded-xl">
-                <ChevronRight />
-              </button>
+              <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-zinc-800 rounded-xl"><ChevronLeft /></button>
+              <span className="font-medium w-44 text-center">{format(currentMonth, "yyyy년 MM월", { locale: ko })}</span>
+              <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-zinc-800 rounded-xl"><ChevronRight /></button>
             </div>
           </div>
 
           <div className="grid grid-cols-7 gap-1 text-center text-sm">
-            {["일", "월", "화", "수", "목", "금", "토"].map(d => (
-              <div key={d} className="font-medium text-zinc-400 py-2">{d}</div>
-            ))}
-
+            {["일", "월", "화", "수", "목", "금", "토"].map(d => <div key={d} className="font-medium text-zinc-400 py-2">{d}</div>)}
             {Array.from({ length: getDay(monthStart) }).map((_, i) => <div key={i} />)}
-
             {daysInMonth.map(day => {
               const dateStr = format(day, "yyyy-MM-dd");
               const status = getStatus(dateStr);
-
               return (
                 <button
                   key={dateStr}
-                  onClick={() => {
-                    setSelectedDate(dateStr);
-                    setIsCalendarModalOpen(true);
-                  }}
-                  className="h-14 flex flex-col items-center justify-center rounded-xl hover:bg-zinc-800 relative text-sm"
+                  onClick={() => { setSelectedDate(dateStr); setIsCalendarModalOpen(true); }}
+                  className="h-14 flex flex-col items-center justify-center rounded-xl hover:bg-zinc-800 relative"
                 >
                   <span>{format(day, "d")}</span>
                   <div className="flex gap-1 mt-1">
@@ -415,10 +404,7 @@ export default function VitalSyncDashboard() {
               <div>
                 <label className="text-sm text-zinc-400 mb-1.5 block">식사 종류</label>
                 <select value={mealType} onChange={e => setMealType(e.target.value)} className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3">
-                  <option value="아침">아침</option>
-                  <option value="점심">점심</option>
-                  <option value="저녁">저녁</option>
-                  <option value="간식">간식</option>
+                  <option value="아침">아침</option><option value="점심">점심</option><option value="저녁">저녁</option><option value="간식">간식</option>
                 </select>
               </div>
               <div>
@@ -433,9 +419,7 @@ export default function VitalSyncDashboard() {
             </div>
             <div className="flex gap-3 mt-8">
               <button onClick={() => setIsMealModalOpen(false)} className="flex-1 py-4 rounded-3xl bg-zinc-800">취소</button>
-              <button onClick={addMeal} disabled={!mealPhoto || uploading} className="flex-1 py-4 rounded-3xl bg-emerald-500 disabled:opacity-50">
-                {uploading ? "업로드 중..." : "식사 기록하기"}
-              </button>
+              <button onClick={addMeal} disabled={!mealPhoto || uploading} className="flex-1 py-4 rounded-3xl bg-emerald-500 disabled:opacity-50">{uploading ? "업로드 중..." : "식사 기록하기"}</button>
             </div>
           </div>
         </div>
@@ -449,15 +433,14 @@ export default function VitalSyncDashboard() {
 
             <div className="mb-8">
               <h4 className="font-semibold mb-3">식사 내역</h4>
-              {getMealsForDate(selectedDate).length > 0 ? getMealsForDate(selectedDate).map(meal => (
-                <div key={meal.id} className="flex gap-4 mb-3 bg-zinc-950 p-3 rounded-2xl">
-                  {meal.photoURL && <img src={meal.photoURL} className="w-16 h-16 rounded-xl object-cover" />}
-                  <div>
-                    <div className="font-medium">{meal.mealType}</div>
-                    {meal.calories && <div className="text-emerald-400 text-sm">{meal.calories} kcal</div>}
+              {getMealsForDate(selectedDate).length > 0 ? (
+                getMealsForDate(selectedDate).map(meal => (
+                  <div key={meal.id} className="flex gap-4 mb-3 bg-zinc-950 p-3 rounded-2xl">
+                    {meal.photoURL && <img src={meal.photoURL} className="w-16 h-16 rounded-xl object-cover" />}
+                    <div><div className="font-medium">{meal.mealType}</div>{meal.calories && <div className="text-emerald-400 text-sm">{meal.calories} kcal</div>}</div>
                   </div>
-                </div>
-              )) : <p className="text-zinc-400">식사 기록이 없습니다.</p>}
+                ))
+              ) : <p className="text-zinc-400">해당 날짜 식사 기록이 없습니다.</p>}
             </div>
 
             <div>
@@ -476,9 +459,7 @@ export default function VitalSyncDashboard() {
               />
             </div>
 
-            <button onClick={() => setIsCalendarModalOpen(false)} className="mt-8 w-full py-4 bg-zinc-800 rounded-3xl hover:bg-zinc-700">
-              닫기
-            </button>
+            <button onClick={() => setIsCalendarModalOpen(false)} className="mt-8 w-full py-4 bg-zinc-800 rounded-3xl hover:bg-zinc-700">닫기</button>
           </div>
         </div>
       )}
@@ -486,7 +467,7 @@ export default function VitalSyncDashboard() {
   );
 }
 
-// ==================== 운동 기록 폼 ====================
+// ==================== 운동 기록 폼 컴포넌트 ====================
 function WorkoutForm({ date, existingWorkout, onSave }: { 
   date: string; 
   existingWorkout?: WorkoutData; 
