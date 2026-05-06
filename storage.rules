@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 식사 사진 - personal-user 전용
+    match /meals/personal-user/{fileName} {
+      allow read, write: if true; // 단순 모드, 필요시 Auth 추가
+    }
+  }
+}

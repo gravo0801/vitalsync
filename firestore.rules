@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// 단일 사용자(personal-user) 전용 규칙
+// 누구나 personal-user 데이터를 read/write할 수 있는 단순 모드입니다.
+// 외부에 URL이 노출되지 않으면 일상 사용에는 충분합니다.
+// 강한 보안이 필요해지면 Firebase Auth (익명 로그인 또는 이메일/비밀번호) 추가 권장.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 프로필 (단일 문서)
+    match /profiles/{userId} {
+      allow read, write: if userId == "personal-user";
+    }
+
+    // 체중 / 식사 / 운동
+    match /weights/{docId} {
+      allow read: if resource.data.userId == "personal-user";
+      allow create: if request.resource.data.userId == "personal-user";
+      allow update, delete: if resource.data.userId == "personal-user";
+    }
+
+    match /meals/{docId} {
+      allow read: if resource.data.userId == "personal-user";
+      allow create: if request.resource.data.userId == "personal-user";
+      allow update, delete: if resource.data.userId == "personal-user";
+    }
+
+    match /workouts/{docId} {
+      allow read: if resource.data.userId == "personal-user";
+      allow create: if request.resource.data.userId == "personal-user";
+      allow update, delete: if resource.data.userId == "personal-user";
+    }
+  }
+}
