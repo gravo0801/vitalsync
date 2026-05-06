@@ -1,0 +1,110 @@
+"use client";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import Modal from "./Modal";
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  defaultDate?: string;
+  onSave: (date: string, weight: number, memo?: string) => Promise<void>;
+}
+
+export default function WeightModal({ open, onClose, defaultDate, onSave }: Props) {
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [weight, setWeight] = useState("");
+  const [memo, setMemo] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setDate(defaultDate || format(new Date(), "yyyy-MM-dd"));
+      setWeight("");
+      setMemo("");
+    }
+  }, [open, defaultDate]);
+
+  const submit = async () => {
+    if (!weight) {
+      toast.error("체중을 입력해주세요");
+      return;
+    }
+    const w = parseFloat(weight);
+    if (isNaN(w) || w <= 0 || w > 300) {
+      toast.error("올바른 체중을 입력해주세요");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(date, w, memo);
+      toast.success("저장되었습니다");
+      onClose();
+    } catch {
+      toast.error("저장에 실패했습니다");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputCls =
+    "w-full bg-amber-50 dark:bg-zinc-950 border border-stone-300 dark:border-zinc-700 rounded-2xl px-4 py-3 outline-none focus:border-emerald-500";
+
+  return (
+    <Modal open={open} onClose={onClose} title="체중 기록">
+      <div className="space-y-4">
+        <div>
+          <label className="text-sm text-stone-500 dark:text-zinc-400 mb-1.5 block">날짜</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <label className="text-sm text-stone-500 dark:text-zinc-400 mb-1.5 block">
+            체중 (kg)
+          </label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="98.0"
+            className={`${inputCls} text-3xl font-semibold`}
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="text-sm text-stone-500 dark:text-zinc-400 mb-1.5 block">
+            메모 (선택)
+          </label>
+          <input
+            type="text"
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            placeholder="아침 공복 측정 등"
+            className={inputCls}
+          />
+        </div>
+      </div>
+      <div className="flex gap-3 mt-6">
+        <button
+          onClick={onClose}
+          className="flex-1 py-3.5 rounded-2xl bg-stone-200 dark:bg-zinc-800 hover:opacity-80"
+        >
+          취소
+        </button>
+        <button
+          onClick={submit}
+          disabled={!weight || saving}
+          className="flex-1 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+        >
+          {saving ? "저장 중..." : "기록"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
