@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import Modal from "./Modal";
+import Modal, { inputClass, labelClass, PrimaryButton, SecondaryButton } from "./Modal";
 
 interface Props {
   open: boolean;
@@ -47,25 +47,25 @@ export default function WeightModal({ open, onClose, defaultDate, onSave }: Prop
     }
   };
 
-  const inputCls =
-    "w-full bg-amber-50 dark:bg-zinc-950 border border-stone-300 dark:border-zinc-700 rounded-2xl px-4 py-3 outline-none focus:border-emerald-500";
-
   return (
-    <Modal open={open} onClose={onClose} title="체중 기록">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="체중 기록"
+      subtitle="오늘의 체중을 남겨보세요"
+    >
       <div className="space-y-4">
         <div>
-          <label className="text-sm text-stone-500 dark:text-zinc-400 mb-1.5 block">날짜</label>
+          <label className={labelClass}>날짜</label>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className={inputCls}
+            className={inputClass}
           />
         </div>
         <div>
-          <label className="text-sm text-stone-500 dark:text-zinc-400 mb-1.5 block">
-            체중 (kg)
-          </label>
+          <label className={labelClass}>체중 (kg)</label>
           <input
             type="number"
             inputMode="decimal"
@@ -73,37 +73,26 @@ export default function WeightModal({ open, onClose, defaultDate, onSave }: Prop
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
             placeholder="98.0"
-            className={`${inputCls} text-3xl font-semibold`}
+            className={`${inputClass} text-2xl font-semibold tabular`}
             autoFocus
           />
         </div>
         <div>
-          <label className="text-sm text-stone-500 dark:text-zinc-400 mb-1.5 block">
-            메모 (선택)
-          </label>
+          <label className={labelClass}>메모 (선택)</label>
           <input
             type="text"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
             placeholder="아침 공복 측정 등"
-            className={inputCls}
+            className={inputClass}
           />
         </div>
       </div>
-      <div className="flex gap-3 mt-6">
-        <button
-          onClick={onClose}
-          className="flex-1 py-3.5 rounded-2xl bg-stone-200 dark:bg-zinc-800 hover:opacity-80"
-        >
-          취소
-        </button>
-        <button
-          onClick={submit}
-          disabled={!weight || saving}
-          className="flex-1 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
-        >
+      <div className="flex gap-2 mt-6">
+        <SecondaryButton onClick={onClose}>취소</SecondaryButton>
+        <PrimaryButton onClick={submit} disabled={!weight || saving} color="sage">
           {saving ? "저장 중..." : "기록"}
-        </button>
+        </PrimaryButton>
       </div>
     </Modal>
   );
