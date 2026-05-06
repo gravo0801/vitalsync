@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { toast } from "sonner";
 import type { WeightRecord, MealRecord } from "@/types";
+import { Card } from "./SummaryCards";
 
 interface Props {
   weights: WeightRecord[];
@@ -35,87 +36,96 @@ export default function RecentRecords({
     }
   };
 
-  const cardClass =
-    "rounded-3xl p-6 bg-white dark:bg-zinc-900 border border-amber-200 dark:border-zinc-800 shadow-sm";
-  const itemClass =
-    "flex justify-between items-center px-4 py-3 rounded-2xl bg-amber-50 dark:bg-zinc-950 group";
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-      <div className={cardClass}>
-        <h3 className="font-semibold mb-4">최근 체중 기록</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+      <Card>
+        <h3 className="text-base font-semibold tracking-tight mb-3">
+          최근 <span className="serif-italic">체중</span>
+        </h3>
         {weights.length === 0 ? (
-          <p className="text-stone-500 dark:text-zinc-400">기록이 없습니다.</p>
+          <p className="text-sm text-[color:var(--muted)] py-3">기록이 없습니다.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {[...weights].reverse().slice(0, 5).map((w) => (
-              <div key={w.id} className={itemClass}>
+              <RecordRow
+                key={w.id}
+                onDelete={() => handleDeleteWeight(w.id)}
+              >
                 <div className="flex flex-col">
                   <span className="text-sm">
-                    {format(new Date(w.date), "yyyy년 MM월 dd일 (E)", { locale: ko })}
+                    {format(new Date(w.date), "yyyy.MM.dd (E)", { locale: ko })}
                   </span>
                   {w.memo && (
-                    <span className="text-xs text-stone-500 dark:text-zinc-400">{w.memo}</span>
+                    <span className="text-xs text-[color:var(--muted)] mt-0.5">{w.memo}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-semibold">{w.weight} kg</span>
-                  <button
-                    onClick={() => handleDeleteWeight(w.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg"
-                    aria-label="삭제"
-                  >
-                    <Trash2 size={14} className="text-red-500" />
-                  </button>
-                </div>
-              </div>
+                <span className="font-semibold tabular text-sm">{w.weight} <span className="text-xs font-normal text-[color:var(--muted)]">kg</span></span>
+              </RecordRow>
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
-      <div className={cardClass}>
-        <h3 className="font-semibold mb-4">최근 식사 기록</h3>
+      <Card>
+        <h3 className="text-base font-semibold tracking-tight mb-3">
+          최근 <span className="serif-italic">식사</span>
+        </h3>
         {meals.length === 0 ? (
-          <p className="text-stone-500 dark:text-zinc-400">기록이 없습니다.</p>
+          <p className="text-sm text-[color:var(--muted)] py-3">기록이 없습니다.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {meals.slice(0, 4).map((meal) => (
-              <div key={meal.id} className="flex gap-3 rounded-2xl overflow-hidden bg-amber-50 dark:bg-zinc-950 group">
+              <RecordRow
+                key={meal.id}
+                onDelete={() => handleDeleteMeal(meal)}
+              >
                 {meal.photoURL && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={meal.photoURL} alt="" className="w-20 h-20 object-cover shrink-0" />
+                  <img src={meal.photoURL} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
                 )}
-                <div className="flex-1 py-3 pr-3 flex justify-between items-start">
-                  <div>
-                    <div className="font-semibold text-sm">
-                      {meal.mealType}
-                      <span className="text-xs text-stone-500 dark:text-zinc-400 ml-2">
-                        {format(new Date(meal.date), "MM/dd", { locale: ko })}
-                      </span>
-                    </div>
-                    {meal.content && (
-                      <div className="text-xs text-stone-600 dark:text-zinc-300 mt-1 line-clamp-2">
-                        {meal.content}
-                      </div>
-                    )}
-                    {meal.calories != null && (
-                      <div className="text-emerald-500 text-xs mt-1">{meal.calories} kcal</div>
-                    )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">{meal.mealType}</span>
+                    <span className="text-xs text-[color:var(--muted)]">
+                      {format(new Date(meal.date), "MM.dd", { locale: ko })}
+                    </span>
                   </div>
-                  <button
-                    onClick={() => handleDeleteMeal(meal)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg shrink-0"
-                    aria-label="삭제"
-                  >
-                    <Trash2 size={14} className="text-red-500" />
-                  </button>
+                  {meal.content && (
+                    <div className="text-xs text-[color:var(--muted-foreground)] mt-0.5 line-clamp-1">
+                      {meal.content}
+                    </div>
+                  )}
                 </div>
-              </div>
+                {meal.calories != null && (
+                  <span className="text-xs tabular text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)] shrink-0">
+                    {meal.calories} kcal
+                  </span>
+                )}
+              </RecordRow>
             ))}
           </div>
         )}
-      </div>
+      </Card>
+    </div>
+  );
+}
+
+function RecordRow({
+  children, onDelete,
+}: {
+  children: React.ReactNode;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-black/3 dark:hover:bg-white/5 group">
+      <div className="flex-1 flex items-center gap-3 justify-between">{children}</div>
+      <button
+        onClick={onDelete}
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-[var(--color-wine-500)]/10"
+        aria-label="삭제"
+      >
+        <Trash2 size={13} className="text-[var(--color-wine-500)]" />
+      </button>
     </div>
   );
 }

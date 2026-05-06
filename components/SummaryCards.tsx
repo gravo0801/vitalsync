@@ -1,5 +1,4 @@
 "use client";
-import { TrendingDown, Target, Flame } from "lucide-react";
 import {
   calculateBMI,
   bmiCategory,
@@ -18,10 +17,7 @@ interface Props {
 }
 
 export default function SummaryCards({
-  profile,
-  currentWeight,
-  todayKcalIn,
-  todayKcalBurned,
+  profile, currentWeight, todayKcalIn, todayKcalBurned,
 }: Props) {
   const bmi = calculateBMI(currentWeight, profile.heightCm);
   const cat = bmiCategory(bmi);
@@ -29,73 +25,125 @@ export default function SummaryCards({
   const remaining = dailyTarget - todayKcalIn + todayKcalBurned;
   const remainingColor =
     remaining < 0
-      ? "text-red-500"
+      ? "text-[var(--color-wine-600)] dark:text-[var(--color-wine-400)]"
       : remaining < 300
-      ? "text-yellow-500"
-      : "text-emerald-500";
+      ? "text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)]"
+      : "text-[var(--color-sage-600)] dark:text-[var(--color-sage-400)]";
 
   const toGoal = currentWeight - profile.targetWeightKg;
   const eta = estimateTargetDate(currentWeight, profile.targetWeightKg, 0.5);
-
-  const cardClass =
-    "rounded-3xl p-6 bg-white dark:bg-zinc-900 border border-amber-200 dark:border-zinc-800 shadow-sm";
+  const progressPct = profile.startWeightKg > profile.targetWeightKg
+    ? Math.min(100, Math.max(0,
+        ((profile.startWeightKg - currentWeight) /
+          (profile.startWeightKg - profile.targetWeightKg)) * 100))
+    : 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      {/* BMI 카드 */}
-      <div className={cardClass}>
-        <div className="flex items-center gap-3 text-emerald-500 mb-2">
-          <TrendingDown className="w-5 h-5" />
-          <span className="text-sm font-medium">현재 체중 / BMI</span>
-        </div>
-        <div className="text-4xl font-semibold tracking-tighter">
-          {currentWeight ? currentWeight.toFixed(1) : "-"} kg
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+      {/* 현재 체중 / BMI */}
+      <Card accentColor="sage">
+        <CardLabel>현재 <span className="serif-italic">체중</span> · BMI</CardLabel>
+        <div className="flex items-baseline gap-2 mt-3">
+          <span className="text-3xl font-semibold tabular tracking-tight">
+            {currentWeight ? currentWeight.toFixed(1) : "—"}
+          </span>
+          <span className="text-sm text-[color:var(--muted)]">kg</span>
         </div>
         <div className="flex items-center gap-2 mt-2">
-          <span className="text-2xl font-semibold">
-            {bmi ? bmi.toFixed(1) : "-"}
-          </span>
-          <span className={`text-sm font-medium ${cat.color}`}>{cat.label}</span>
+          <span className="text-base font-medium tabular">{bmi ? bmi.toFixed(1) : "—"}</span>
+          <span className={`text-xs ${cat.color}`}>{cat.label}</span>
         </div>
-      </div>
+      </Card>
 
-      {/* 목표 카드 */}
-      <div className={cardClass}>
-        <div className="flex items-center gap-3 text-blue-500 mb-2">
-          <Target className="w-5 h-5" />
-          <span className="text-sm font-medium">목표까지</span>
+      {/* 목표 */}
+      <Card accentColor="terra">
+        <CardLabel>목표까지 <span className="serif-italic">남은 거리</span></CardLabel>
+        <div className="flex items-baseline gap-2 mt-3">
+          <span className="text-3xl font-semibold tabular tracking-tight">
+            {toGoal > 0 ? toGoal.toFixed(1) : 0}
+          </span>
+          <span className="text-sm text-[color:var(--muted)]">kg</span>
         </div>
-        <div className="text-4xl font-semibold tracking-tighter">
-          {toGoal > 0 ? toGoal.toFixed(1) : 0} kg
-        </div>
-        <p className="text-stone-500 dark:text-zinc-400 text-sm mt-2">
-          목표: {profile.targetWeightKg} kg
+        <div className="text-xs text-[color:var(--muted)] mt-2">
+          목표 {profile.targetWeightKg}kg
           {eta && (
             <>
-              {" "}
-              · 예상 도달{" "}
-              <span className="text-blue-500">
-                {format(eta.date, "yyyy.MM.dd", { locale: ko })}
+              {" "}· 예상 도달{" "}
+              <span className="text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)]">
+                {format(eta.date, "yy.MM.dd", { locale: ko })}
               </span>
             </>
           )}
-        </p>
-      </div>
+        </div>
+        <div className="progress-bar mt-3">
+          <div
+            className="h-full bg-[var(--color-terra-500)] transition-all"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </Card>
 
-      {/* 일일 칼로리 카드 */}
-      <div className={cardClass}>
-        <div className="flex items-center gap-3 text-orange-500 mb-2">
-          <Flame className="w-5 h-5" />
-          <span className="text-sm font-medium">오늘 잔여 칼로리</span>
+      {/* 잔여 칼로리 */}
+      <Card accentColor={remaining < 0 ? "wine" : "sage"}>
+        <CardLabel>오늘 <span className="serif-italic">잔여 칼로리</span></CardLabel>
+        <div className="flex items-baseline gap-2 mt-3">
+          <span className={`text-3xl font-semibold tabular tracking-tight ${remainingColor}`}>
+            {remaining >= 0 ? remaining.toLocaleString() : `+${Math.abs(remaining).toLocaleString()}`}
+          </span>
+          <span className="text-sm text-[color:var(--muted)]">kcal</span>
         </div>
-        <div className={`text-4xl font-semibold tracking-tighter ${remainingColor}`}>
-          {remaining >= 0 ? remaining : `+${Math.abs(remaining)}`} kcal
-        </div>
-        <p className="text-stone-500 dark:text-zinc-400 text-sm mt-2">
+        <div className="text-xs text-[color:var(--muted)] mt-2 tabular">
           목표 {dailyTarget.toLocaleString()} · 섭취 {todayKcalIn.toLocaleString()}
           {todayKcalBurned > 0 && ` · 소모 ${todayKcalBurned.toLocaleString()}`}
-        </p>
-      </div>
+        </div>
+      </Card>
     </div>
+  );
+}
+
+type AccentColor = "sage" | "terra" | "wine" | "slate-blue" | "mauve";
+
+const ACCENT_COLOR_MAP: Record<AccentColor, string> = {
+  sage: "var(--color-sage-500)",
+  terra: "var(--color-terra-500)",
+  wine: "var(--color-wine-500)",
+  "slate-blue": "var(--color-slate-blue-500)",
+  mauve: "var(--color-mauve-500)",
+};
+
+export function Card({
+  children,
+  accentColor,
+  className = "",
+}: {
+  children: React.ReactNode;
+  accentColor?: AccentColor;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`
+        relative overflow-hidden
+        bg-white dark:bg-[var(--color-ink-900)]
+        border border-black/6 dark:border-white/6
+        rounded-2xl p-5
+        ${className}
+      `}
+      style={accentColor ? { ["--accent-color" as never]: ACCENT_COLOR_MAP[accentColor] } : undefined}
+    >
+      {accentColor && (
+        <div
+          className="absolute top-0 left-0 right-0 h-[2px]"
+          style={{ background: ACCENT_COLOR_MAP[accentColor] }}
+        />
+      )}
+      {children}
+    </div>
+  );
+}
+
+export function CardLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-xs text-[color:var(--muted)] tracking-wide">{children}</div>
   );
 }

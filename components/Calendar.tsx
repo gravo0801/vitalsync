@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   getDay, addMonths, subMonths, isToday,
 } from "date-fns";
 import { ko } from "date-fns/locale";
 import type { WeightRecord, MealRecord, WorkoutRecord } from "@/types";
+import { Card } from "./SummaryCards";
 
 interface Props {
   weights: WeightRecord[];
@@ -28,33 +29,38 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
   });
 
   return (
-    <div className="rounded-3xl p-6 bg-white dark:bg-zinc-900 border border-amber-200 dark:border-zinc-800 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="font-semibold text-xl flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5" /> 캘린더
+    <Card>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-base font-semibold tracking-tight">
+          월별 <span className="serif-italic">기록</span>
         </h3>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-1 text-sm">
           <button
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 hover:bg-amber-200 dark:hover:bg-zinc-800 rounded-xl"
+            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={14} />
           </button>
-          <span className="font-medium w-32 text-center">
+          <span className="font-medium w-28 text-center text-sm tabular">
             {format(currentMonth, "yyyy년 MM월", { locale: ko })}
           </span>
           <button
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 hover:bg-amber-200 dark:hover:bg-zinc-800 rounded-xl"
+            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={14} />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-sm">
-        {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
-          <div key={d} className="font-medium text-stone-500 dark:text-zinc-400 py-2">
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
+          <div
+            key={d}
+            className={`text-[11px] font-medium py-2 ${
+              i === 0 ? "text-[var(--color-wine-500)]" : "text-[color:var(--muted)]"
+            }`}
+          >
             {d}
           </div>
         ))}
@@ -65,30 +71,43 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
           const dateStr = format(day, "yyyy-MM-dd");
           const status = getStatus(dateStr);
           const today = isToday(day);
+          const dayOfWeek = getDay(day);
           return (
             <button
               key={dateStr}
               onClick={() => onSelectDate(dateStr)}
-              className={`h-16 flex flex-col items-center justify-center rounded-xl hover:bg-amber-200 dark:hover:bg-zinc-800 relative transition ${
-                today ? "ring-2 ring-emerald-500" : ""
-              }`}
+              className={`
+                h-14 flex flex-col items-center justify-center rounded-lg
+                hover:bg-black/4 dark:hover:bg-white/5 relative transition-colors
+                ${today ? "bg-[var(--color-sage-500)]/8 ring-1 ring-[var(--color-sage-500)]/40" : ""}
+              `}
             >
-              <span className={today ? "font-bold text-emerald-500" : ""}>
+              <span
+                className={`text-sm tabular ${
+                  today ? "font-semibold text-[var(--color-sage-600)] dark:text-[var(--color-sage-400)]"
+                  : dayOfWeek === 0 ? "text-[var(--color-wine-500)]"
+                  : ""
+                }`}
+              >
                 {format(day, "d")}
               </span>
               {status.weight && (
-                <span className="text-[10px] text-stone-500 dark:text-zinc-400">
+                <span className="text-[9px] text-[color:var(--muted)] tabular">
                   {status.weight}
                 </span>
               )}
-              <div className="flex gap-1 mt-0.5">
-                {status.hasMeal && <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />}
-                {status.hasWorkout && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />}
+              <div className="flex gap-0.5 mt-0.5">
+                {status.hasMeal && (
+                  <div className="w-1 h-1 rounded-full bg-[var(--color-terra-500)]" />
+                )}
+                {status.hasWorkout && (
+                  <div className="w-1 h-1 rounded-full bg-[var(--color-slate-blue-500)]" />
+                )}
               </div>
             </button>
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
