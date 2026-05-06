@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import Link from "next/link";
 
@@ -10,7 +9,8 @@ import { useWeights } from "@/hooks/useWeights";
 import { useMeals } from "@/hooks/useMeals";
 import { useWorkouts } from "@/hooks/useWorkouts";
 
-import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
+import PageHeader from "@/components/PageHeader";
 import SummaryCards from "@/components/SummaryCards";
 import WeightChart from "@/components/WeightChart";
 import RecentRecords from "@/components/RecentRecords";
@@ -22,7 +22,6 @@ import WorkoutModal from "@/components/modals/WorkoutModal";
 import DayDetailModal from "@/components/modals/DayDetailModal";
 
 export default function Dashboard() {
-  const router = useRouter();
   const { profile, loading: pLoading } = useProfile();
   const { weights, loading: wLoading, addWeight, deleteWeight } = useWeights();
   const { meals, loading: mLoading, addMeal, deleteMeal } = useMeals();
@@ -36,14 +35,12 @@ export default function Dashboard() {
 
   const loading = pLoading || wLoading || mLoading || woLoading;
 
-  // 현재 체중 (가장 최근 기록)
   const currentWeight = useMemo(() => {
     if (weights.length === 0) return profile?.startWeightKg ?? 0;
     const sorted = [...weights].sort((a, b) => b.date.localeCompare(a.date));
     return sorted[0].weight;
   }, [weights, profile]);
 
-  // 오늘 칼로리
   const today = format(new Date(), "yyyy-MM-dd");
   const todayKcalIn = meals
     .filter((m) => m.date === today)
@@ -55,7 +52,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-stone-500 dark:text-zinc-400">로딩 중...</div>
+        <div className="text-sm text-[color:var(--muted)]">불러오는 중...</div>
       </div>
     );
   }
@@ -65,16 +62,18 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md text-center">
-          <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <span className="text-white font-bold text-3xl">V</span>
+          <div className="w-12 h-12 bg-[var(--color-ink-900)] rounded-xl flex items-center justify-center mx-auto mb-6">
+            <span className="text-white font-semibold text-xl">V</span>
           </div>
-          <h1 className="text-2xl font-bold mb-2">VitalSync에 오신 것을 환영합니다</h1>
-          <p className="text-stone-500 dark:text-zinc-400 mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight mb-2">
+            VitalSync에 오신 것을 <span className="serif-italic">환영합니다</span>
+          </h1>
+          <p className="text-sm text-[color:var(--muted)] mb-6">
             맞춤 칼로리 목표를 위해 먼저 기본 정보를 입력해주세요.
           </p>
           <Link
             href="/profile"
-            className="inline-block px-8 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+            className="inline-block px-6 py-3 rounded-xl bg-[var(--color-ink-900)] dark:bg-white/10 text-white text-sm font-medium hover:opacity-90"
           >
             프로필 설정하기
           </Link>
@@ -84,48 +83,45 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen">
-      <Header
-        onAddWeight={() => setWeightOpen(true)}
-        onAddMeal={() => setMealOpen(true)}
-        onAddWorkout={() => setWorkoutOpen(true)}
-      />
+    <div className="flex min-h-screen">
+      <Sidebar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="mb-6">
-          <p className="text-stone-500 dark:text-zinc-400">
-            안녕하세요, {profile.name || "그라보"}님 👋
-          </p>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-1">
-            오늘도 좋은 하루 되세요
-          </h2>
+      <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
+        <div className="max-w-6xl mx-auto">
+          <PageHeader
+            name={profile.name}
+            greeting="건강 현황"
+            onAddWeight={() => setWeightOpen(true)}
+            onAddMeal={() => setMealOpen(true)}
+            onAddWorkout={() => setWorkoutOpen(true)}
+          />
+
+          <SummaryCards
+            profile={profile}
+            currentWeight={currentWeight}
+            todayKcalIn={todayKcalIn}
+            todayKcalBurned={todayKcalBurned}
+          />
+
+          <WeightChart weights={weights} targetWeight={profile.targetWeightKg} />
+
+          <RecentRecords
+            weights={weights}
+            meals={meals}
+            onDeleteWeight={deleteWeight}
+            onDeleteMeal={deleteMeal}
+          />
+
+          <Calendar
+            weights={weights}
+            meals={meals}
+            workouts={workouts}
+            onSelectDate={(d) => {
+              setSelectedDate(d);
+              setDayOpen(true);
+            }}
+          />
         </div>
-
-        <SummaryCards
-          profile={profile}
-          currentWeight={currentWeight}
-          todayKcalIn={todayKcalIn}
-          todayKcalBurned={todayKcalBurned}
-        />
-
-        <WeightChart weights={weights} targetWeight={profile.targetWeightKg} />
-
-        <RecentRecords
-          weights={weights}
-          meals={meals}
-          onDeleteWeight={deleteWeight}
-          onDeleteMeal={deleteMeal}
-        />
-
-        <Calendar
-          weights={weights}
-          meals={meals}
-          workouts={workouts}
-          onSelectDate={(d) => {
-            setSelectedDate(d);
-            setDayOpen(true);
-          }}
-        />
       </main>
 
       {/* 모달들 */}
@@ -135,21 +131,18 @@ export default function Dashboard() {
         defaultDate={selectedDate || undefined}
         onSave={addWeight}
       />
-
       <MealModal
         open={mealOpen}
         onClose={() => setMealOpen(false)}
         defaultDate={selectedDate || undefined}
         onSave={addMeal}
       />
-
       <WorkoutModal
         open={workoutOpen}
         onClose={() => setWorkoutOpen(false)}
         defaultDate={selectedDate || undefined}
         onSave={addWorkout}
       />
-
       <DayDetailModal
         open={dayOpen}
         onClose={() => setDayOpen(false)}
@@ -157,18 +150,9 @@ export default function Dashboard() {
         weights={weights}
         meals={meals}
         workouts={workouts}
-        onAddWeight={() => {
-          setDayOpen(false);
-          setWeightOpen(true);
-        }}
-        onAddMeal={() => {
-          setDayOpen(false);
-          setMealOpen(true);
-        }}
-        onAddWorkout={() => {
-          setDayOpen(false);
-          setWorkoutOpen(true);
-        }}
+        onAddWeight={() => { setDayOpen(false); setWeightOpen(true); }}
+        onAddMeal={() => { setDayOpen(false); setMealOpen(true); }}
+        onAddWorkout={() => { setDayOpen(false); setWorkoutOpen(true); }}
         onDeleteWeight={deleteWeight}
         onDeleteMeal={deleteMeal}
         onDeleteWorkout={deleteWorkout}

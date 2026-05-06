@@ -1,39 +1,166 @@
 @import "tailwindcss";
 
+/* ============================================
+   디자인 토큰 — Gravo finance / Claude.com 톤
+   ============================================ */
+
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "system-ui", "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Playfair Display", "EB Garamond", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  /* 배경 - 따뜻한 크림 베이지 */
+  --color-cream-50: #faf6ee;
+  --color-cream-100: #f5f1ea;
+  --color-cream-150: #efeae0;
+  --color-cream-200: #e8e1d3;
+  --color-cream-300: #d6cab2;
+
+  /* 다크 베이스 - 깊은 차콜 */
+  --color-ink-900: #1a1817;
+  --color-ink-950: #0f0e0d;
+  --color-ink-800: #2a2725;
+  --color-ink-700: #403c38;
+
+  /* 액센트 - earthy/muted */
+  --color-sage-400: #9ab089;
+  --color-sage-500: #84a07c;
+  --color-sage-600: #6b8a64;
+  --color-sage-50: #eef3ea;
+
+  --color-wine-400: #c47878;
+  --color-wine-500: #a85050;
+  --color-wine-600: #8a3a3a;
+  --color-wine-50: #f5e8e8;
+
+  --color-terra-400: #d8a982;
+  --color-terra-500: #c89060;
+  --color-terra-600: #a37245;
+  --color-terra-50: #f7ede0;
+
+  --color-slate-blue-400: #8aa5bd;
+  --color-slate-blue-500: #6b8aa3;
+  --color-slate-blue-600: #4f6d85;
+  --color-slate-blue-50: #e8eef3;
+
+  --color-mauve-500: #9d7a8c;
+}
+
+/* ============================================
+   글로벌 스타일
+   ============================================ */
+
 :root {
-  --background: #fffbeb;
-  --foreground: #1c1917;
+  --background: var(--color-cream-100);
+  --foreground: var(--color-ink-900);
+  --card: #ffffff;
+  --card-border: rgb(0 0 0 / 0.06);
+  --muted: rgb(0 0 0 / 0.55);
+  --muted-foreground: rgb(0 0 0 / 0.65);
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
+  --background: var(--color-ink-950);
+  --foreground: #e8e2d6;
+  --card: var(--color-ink-900);
+  --card-border: rgb(255 255 255 / 0.07);
+  --muted: rgb(255 255 255 / 0.55);
+  --muted-foreground: rgb(255 255 255 / 0.65);
 }
 
 html {
   background: var(--background);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  font-feature-settings: "ss01", "cv01", "cv11";
+  letter-spacing: -0.011em;
 }
 
-input[type="date"],
-input[type="number"] {
-  color-scheme: light dark;
+/* 한글 line-height 후하게 */
+p, li, span, label, input, textarea, button {
+  line-height: 1.6;
 }
 
-.dark input[type="date"],
-.dark input[type="number"] {
+/* 숫자는 tabular */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 이탤릭 세리프 강조어 - 디자인 시그니처 */
+.serif-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
+
+/* input 가독성 - 다크/라이트 모두 명시적으로 */
+input,
+textarea,
+select {
+  color: var(--foreground);
+  color-scheme: light;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
   color-scheme: dark;
 }
 
-/* 스크롤 숨김 (필요 시) */
+/* 카드 상단 액센트 라인 헬퍼 */
+.card-accent-line {
+  position: relative;
+  overflow: hidden;
+}
+.card-accent-line::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-color, var(--color-sage-500));
+}
+
+/* 스크롤바 살짝 미니멀하게 */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* placeholder 차분하게 */
+::placeholder {
+  color: rgb(0 0 0 / 0.35);
+}
+.dark ::placeholder {
+  color: rgb(255 255 255 / 0.35);
+}
+
+/* focus ring */
+*:focus-visible {
+  outline: 2px solid var(--color-sage-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 진행률 바 */
+.progress-bar {
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgb(0 0 0 / 0.06);
+}
+.dark .progress-bar {
+  background: rgb(255 255 255 / 0.08);
 }

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const themeScript = `
   (function() {
     try {
-      var t = localStorage.getItem('vitalsync-theme') || 'dark';
+      var t = localStorage.getItem('vitalsync-theme') || 'light';
       if (t === 'dark') document.documentElement.classList.add('dark');
       else document.documentElement.classList.remove('dark');
     } catch(e) {}
@@ -24,9 +24,21 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        {/* Pretendard - 한글 메인 폰트 */}
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
+        {/* Playfair Display - 이탤릭 세리프 강조어 */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
+          rel="stylesheet"
+        />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="font-sans bg-amber-50 dark:bg-zinc-950 text-stone-900 dark:text-zinc-100 transition-colors antialiased">
+      <body className="antialiased">
         {children}
         <Toaster position="top-center" richColors closeButton theme="system" />
       </body>
