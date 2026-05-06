@@ -20,6 +20,7 @@ interface MealData { id: string; userId: string; date: string; mealType: string;
 interface WorkoutData { id: string; userId: string; date: string; duration: number; notes: string; createdAt: any; }
 
 export default function VitalSyncDashboard() {
+  // ==================== 상태 ====================
   const [weights, setWeights] = useState<WeightData[]>([]);
   const [meals, setMeals] = useState<MealData[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutData[]>([]);
@@ -82,13 +83,12 @@ export default function VitalSyncDashboard() {
     return () => { unsubWeights(); unsubMeals(); unsubWorkouts(); };
   }, [user]);
 
-  // ==================== 몸무게 기록 (최종 수정) ====================
+  // ==================== 몸무게 기록 ====================
   const addWeight = async () => {
     if (!newWeight) {
       alert("몸무게를 입력해주세요.");
       return;
     }
-
     let currentUser = user;
     if (!currentUser) {
       const auth = getAuth();
@@ -101,21 +101,17 @@ export default function VitalSyncDashboard() {
         return;
       }
     }
-
     const weightNum = parseFloat(newWeight);
-
     try {
       const q = query(collection(db, "weights"), where("userId", "==", currentUser.uid), where("date", "==", newDate));
       const snap = await getDocs(q);
       await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "weights", d.id))));
-
       await addDoc(collection(db, "weights"), {
         userId: currentUser.uid,
         date: newDate,
         weight: weightNum,
         createdAt: Timestamp.now(),
       });
-
       setNewWeight("");
       setIsModalOpen(false);
     } catch (error) {
@@ -135,7 +131,6 @@ export default function VitalSyncDashboard() {
       const storageRef = ref(storage, `meals/${user.uid}/${Date.now()}_${mealPhoto.name}`);
       await uploadBytes(storageRef, mealPhoto);
       const photoURL = await getDownloadURL(storageRef);
-
       await addDoc(collection(db, "meals"), {
         userId: user.uid,
         date: format(new Date(), "yyyy-MM-dd"),
@@ -144,7 +139,6 @@ export default function VitalSyncDashboard() {
         photoURL,
         createdAt: Timestamp.now(),
       });
-
       setIsMealModalOpen(false);
       setMealPhoto(null);
       setMealCalories("");
@@ -154,6 +148,24 @@ export default function VitalSyncDashboard() {
       alert("업로드에 실패했습니다.");
     } finally {
       setUploading(false);
+    }
+  };
+
+  // ==================== 운동 기록 저장 ====================
+  const saveWorkout = async (date: string, duration: number, notes: string) => {
+    if (!user) return;
+    try {
+      const q = query(collection(db, "workouts"), where("userId", "==", user.uid), where("date", "==", date));
+      const snap = await getDocs(q);
+      await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "workouts", d.id))));
+      await addDoc(collection(db, "workouts"), {
+        userId: user.uid, date, duration, notes, createdAt: Timestamp.now()
+      });
+      alert("운동 기록이 저장되었습니다!");
+      setIsCalendarModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      alert("저장에 실패했습니다.");
     }
   };
 
@@ -194,11 +206,9 @@ export default function VitalSyncDashboard() {
             <button onClick={toggleTheme} className="p-2 rounded-xl hover:bg-zinc-800 transition-colors">
               {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-
             <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 rounded-2xl text-sm font-medium active:scale-95">
               <Plus size={18} /> 몸무게
             </button>
-
             <button onClick={() => setIsMealModalOpen(true)} className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 px-5 py-2.5 rounded-2xl text-sm font-medium active:scale-95">
               <Plus size={18} /> 식사
             </button>
@@ -212,8 +222,79 @@ export default function VitalSyncDashboard() {
           <h2 className="text-3xl font-semibold tracking-tight mt-1">오늘도 좋은 하루 되세요</h2>
         </div>
 
-        {/* 요약 카드, 그래프, 최근 기록, 캘린더 등은 이전 코드와 동일 */}
-        {/* (길이 때문에 생략하지 않고 실제로는 모두 포함되어 있음) */}
+        {/* 요약 카드 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
+            <div className="flex items-center gap-3 text-emerald-400 mb-2">
+              <TrendingDown className="w-5 h-5" />
+              <span className="text-sm font-medium">현재 체중</span>
+            </div>
+            <div className="text-5xl font-semibold tracking-tighter">{latestWeight} kg</div>
+            <p className="text-emerald-400 text-sm mt-1">최근 {weightChange}kg</p>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
+            <div className="flex items-center gap-3 text-zinc-400 mb-2">
+              <CalendarIcon className="w-5 h-5" />
+              <span className="text-sm font-medium">기록일</span>
+            </div>
+            <div className="text-5xl font-semibold tracking-tighter">{weights.length}일</div>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-zinc-400 text-sm mb-1">다음 목표</p>
+              <p className="text-3xl font-semibold">68.0 kg</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 그래프 */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mb-8">
+          <h3 className="font-semibold text-xl mb-4">체중 변화 추이</h3>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis dataKey="date" stroke="#52525b" />
+                <YAxis domain={["auto", "auto"]} stroke="#52525b" />
+                <Tooltip />
+                <Line type="monotone" dataKey="weight" stroke="#10b981" strokeWidth={3} dot={{ fill: "#10b981", r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 최근 기록 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
+            <h3 className="font-semibold mb-4">최근 체중 기록</h3>
+            {weights.length === 0 ? <p className="text-zinc-400">기록이 없습니다.</p> : (
+              <div className="space-y-2">
+                {weights.slice().reverse().slice(0, 5).map((item, index) => (
+                  <div key={index} className="flex justify-between items-center bg-zinc-950 px-4 py-3 rounded-2xl">
+                    <span>{format(new Date(item.date), "yyyy년 MM월 dd일", { locale: ko })}</span>
+                    <span className="font-mono font-semibold">{item.weight} kg</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
+            <h3 className="font-semibold mb-4">최근 식사 기록</h3>
+            {meals.length === 0 ? <p className="text-zinc-400">기록이 없습니다.</p> : (
+              <div className="space-y-3">
+                {meals.slice(0, 4).map((meal) => (
+                  <div key={meal.id} className="flex gap-4 bg-zinc-950 rounded-2xl overflow-hidden">
+                    {meal.photoURL && <img src={meal.photoURL} className="w-20 h-20 object-cover" />}
+                    <div className="py-3">
+                      <div className="font-semibold">{meal.mealType}</div>
+                      {meal.calories && <div className="text-emerald-400 text-sm">{meal.calories} kcal</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* 캘린더 */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
@@ -284,10 +365,7 @@ export default function VitalSyncDashboard() {
               <div>
                 <label className="text-sm text-zinc-400 mb-1.5 block">식사 종류</label>
                 <select value={mealType} onChange={e => setMealType(e.target.value)} className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3">
-                  <option value="아침">아침</option>
-                  <option value="점심">점심</option>
-                  <option value="저녁">저녁</option>
-                  <option value="간식">간식</option>
+                  <option value="아침">아침</option><option value="점심">점심</option><option value="저녁">저녁</option><option value="간식">간식</option>
                 </select>
               </div>
               <div>
@@ -340,7 +418,12 @@ export default function VitalSyncDashboard() {
   );
 }
 
-function WorkoutForm({ date, existingWorkout, onSave }: { date: string; existingWorkout?: WorkoutData; onSave: (date: string, duration: number, notes: string) => void }) {
+// ==================== 운동 기록 폼 ====================
+function WorkoutForm({ date, existingWorkout, onSave }: { 
+  date: string; 
+  existingWorkout?: WorkoutData; 
+  onSave: (date: string, duration: number, notes: string) => void 
+}) {
   const [duration, setDuration] = useState(existingWorkout?.duration || 60);
   const [notes, setNotes] = useState(existingWorkout?.notes || "");
 
