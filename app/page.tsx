@@ -14,40 +14,34 @@ import { getAuth, onAuthStateChanged, signInAnonymously, User } from "firebase/a
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 
-// ==================== 타입 정의 ====================
+// ==================== 타입 ====================
 interface WeightData { id: string; userId: string; date: string; weight: number; createdAt: any; }
 interface MealData { id: string; userId: string; date: string; mealType: string; calories: number | null; photoURL: string; createdAt: any; }
 interface WorkoutData { id: string; userId: string; date: string; duration: number; notes: string; createdAt: any; }
 
 export default function VitalSyncDashboard() {
-
-  // ==================== 상태 관리 ====================
+  // ==================== 상태 ====================
   const [weights, setWeights] = useState<WeightData[]>([]);
   const [meals, setMeals] = useState<MealData[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutData[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
-  // 몸무게 입력
   const [newWeight, setNewWeight] = useState("");
   const [newDate, setNewDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  // 식사 입력
   const [mealType, setMealType] = useState("아침");
   const [mealCalories, setMealCalories] = useState("");
   const [mealPhoto, setMealPhoto] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // 캘린더
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // 테마 (다크 / 라이트)
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   // ==================== 테마 토글 ====================
@@ -102,32 +96,42 @@ export default function VitalSyncDashboard() {
     return () => { unsubWeights(); unsubMeals(); unsubWorkouts(); };
   }, [user]);
 
-  // ==================== 몸무게 추가 ====================
+  // ==================== 몸무게 추가 (개선) ====================
   const addWeight = async () => {
     if (!newWeight || !user) return;
     const weightNum = parseFloat(newWeight);
 
     try {
+      // 같은 날짜 기존 데이터 삭제
       const q = query(collection(db, "weights"), where("userId", "==", user.uid), where("date", "==", newDate));
       const snap = await getDocs(q);
       await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "weights", d.id))));
 
+      // 새 데이터 추가
       await addDoc(collection(db, "weights"), {
-        userId: user.uid, date: newDate, weight: weightNum, createdAt: Timestamp.now()
+        userId: user.uid,
+        date: newDate,
+        weight: weightNum,
+        createdAt: Timestamp.now(),
       });
-      setNewWeight(""); setIsModalOpen(false);
+
+      // 상태 즉시 업데이트 + 모달 닫기
+      setNewWeight("");
+      setIsModalOpen(false);
+
     } catch (error) {
-      console.error(error);
+      console.error("Error adding weight:", error);
       alert("저장에 실패했습니다.");
     }
   };
 
-  // ==================== 식사 사진 업로드 ====================
+  // ==================== 식사 업로드 (개선) ====================
   const addMeal = async () => {
     if (!user || !mealPhoto) {
       alert("사진을 선택해주세요!");
       return;
     }
+
     setUploading(true);
 
     try {
@@ -144,12 +148,14 @@ export default function VitalSyncDashboard() {
         createdAt: Timestamp.now(),
       });
 
+      // 상태 초기화 + 모달 닫기
       setIsMealModalOpen(false);
       setMealPhoto(null);
       setMealCalories("");
       setMealType("아침");
+
     } catch (error) {
-      console.error(error);
+      console.error("Error adding meal:", error);
       alert("업로드에 실패했습니다.");
     } finally {
       setUploading(false);
@@ -168,6 +174,7 @@ export default function VitalSyncDashboard() {
       await addDoc(collection(db, "workouts"), {
         userId: user.uid, date, duration, notes, createdAt: Timestamp.now()
       });
+
       alert("운동 기록이 저장되었습니다!");
       setIsCalendarModalOpen(false);
     } catch (error) {
@@ -176,7 +183,7 @@ export default function VitalSyncDashboard() {
     }
   };
 
-  // ==================== 계산 값 ====================
+  // ==================== 계산 ====================
   const chartData = weights.map(item => ({
     date: format(new Date(item.date), "MM/dd"),
     weight: item.weight,
@@ -186,7 +193,6 @@ export default function VitalSyncDashboard() {
   const firstWeight = weights.length > 0 ? weights[0].weight : 0;
   const weightChange = weights.length > 0 ? (latestWeight - firstWeight).toFixed(1) : "0.0";
 
-  // ==================== 캘린더 관련 ====================
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -203,11 +209,11 @@ export default function VitalSyncDashboard() {
     return <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">로딩 중...</div>;
   }
 
-  // ==================== 화면 렌더링 ====================
+  // ==================== 화면 ====================
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
 
-      {/* ==================== 헤더 ==================== */}
+      {/* 헤더 */}
       <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -218,7 +224,7 @@ export default function VitalSyncDashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* 테마 토글 버튼 */}
+            {/* 테마 토글 */}
             <button onClick={toggleTheme} className="p-2 rounded-xl hover:bg-zinc-800 transition-colors">
               {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </button>
@@ -333,7 +339,7 @@ export default function VitalSyncDashboard() {
           </div>
         </div>
 
-        {/* ==================== 캘린더 ==================== */}
+        {/* 캘린더 */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-semibold text-xl flex items-center gap-2">
@@ -370,7 +376,7 @@ export default function VitalSyncDashboard() {
         </div>
       </div>
 
-      {/* ==================== 모달 영역 ==================== */}
+      {/* ==================== 모달 ==================== */}
 
       {/* 몸무게 모달 */}
       {isModalOpen && (
@@ -440,7 +446,7 @@ export default function VitalSyncDashboard() {
                     <div><div className="font-medium">{meal.mealType}</div>{meal.calories && <div className="text-emerald-400 text-sm">{meal.calories} kcal</div>}</div>
                   </div>
                 ))
-              ) : <p className="text-zinc-400">해당 날짜 식사 기록이 없습니다.</p>}
+              ) : <p className="text-zinc-400">식사 기록이 없습니다.</p>}
             </div>
 
             <div>
@@ -467,7 +473,7 @@ export default function VitalSyncDashboard() {
   );
 }
 
-// ==================== 운동 기록 폼 컴포넌트 ====================
+// ==================== 운동 기록 폼 ====================
 function WorkoutForm({ date, existingWorkout, onSave }: { 
   date: string; 
   existingWorkout?: WorkoutData; 
