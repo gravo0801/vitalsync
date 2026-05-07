@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
-  collection, onSnapshot, query, where, orderBy,
+  collection, onSnapshot, query, where,
   addDoc, deleteDoc, updateDoc, doc, Timestamp,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -13,18 +13,27 @@ export function useMeals() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // ⭐ orderBy 제거 - 클라이언트에서 createdAt 내림차순 정렬
     const q = query(
       collection(db, "meals"),
-      where("userId", "==", PERSONAL_USER_ID),
-      orderBy("createdAt", "desc")
+      where("userId", "==", PERSONAL_USER_ID)
     );
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setMeals(snap.docs.map((d) => ({ id: d.id, ...d.data() } as MealRecord)));
+        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as MealRecord));
+        docs.sort((a, b) => {
+          const ta = a.createdAt?.toMillis?.() ?? 0;
+          const tb = b.createdAt?.toMillis?.() ?? 0;
+          return tb - ta;
+        });
+        setMeals(docs);
         setLoading(false);
       },
-      () => setLoading(false)
+      (err) => {
+        console.error("[useMeals] onSnapshot error:", err);
+        setLoading(false);
+      }
     );
     return () => unsub();
   }, []);
@@ -68,7 +77,7 @@ export function useMeals() {
       try {
         await deleteObject(ref(storage, meal.photoURL));
       } catch {
-        // 이미 없을 수도 있음
+        // 이미 없을 수 있음
       }
     }
     await deleteDoc(doc(db, "meals", meal.id));

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
-  collection, onSnapshot, query, where, orderBy,
+  collection, onSnapshot, query, where,
   addDoc, deleteDoc, updateDoc, doc, Timestamp,
 } from "firebase/firestore";
 import { db, PERSONAL_USER_ID } from "@/lib/firebase";
@@ -12,18 +12,23 @@ export function useWeights() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // ⭐ orderBy 제거 - 복합 인덱스 불필요. 클라이언트에서 정렬.
     const q = query(
       collection(db, "weights"),
-      where("userId", "==", PERSONAL_USER_ID),
-      orderBy("date", "asc")
+      where("userId", "==", PERSONAL_USER_ID)
     );
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setWeights(snap.docs.map((d) => ({ id: d.id, ...d.data() } as WeightRecord)));
+        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as WeightRecord));
+        docs.sort((a, b) => a.date.localeCompare(b.date));
+        setWeights(docs);
         setLoading(false);
       },
-      () => setLoading(false)
+      (err) => {
+        console.error("[useWeights] onSnapshot error:", err);
+        setLoading(false);
+      }
     );
     return () => unsub();
   }, []);
