@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, User, Activity, Utensils, Dumbbell,
-  TrendingUp, Settings, Menu, X, Sun, Moon,
+  TrendingUp, Settings, Menu, X, Sun, Moon, Sparkles,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -17,6 +17,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { href: "/", label: "대시보드", icon: <LayoutDashboard size={16} />, group: "OVERVIEW" },
+  { href: "/inbody", label: "인바디 (AI 분석)", icon: <Sparkles size={16} />, group: "OVERVIEW" },
   { href: "/profile", label: "프로필", icon: <User size={16} />, group: "관리" },
 ];
 
