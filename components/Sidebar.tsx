@@ -3,8 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, User, Activity, Utensils, Dumbbell,
-  TrendingUp, Settings, Menu, X, Sun, Moon, Sparkles, Syringe,
+  LayoutDashboard, User, Utensils, Sparkles,
+  Menu, X, Sun, Moon,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -17,7 +17,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { href: "/", label: "대시보드", icon: <LayoutDashboard size={16} />, group: "OVERVIEW" },
-  { href: "/medication", label: "마운자로", icon: <Syringe size={16} />, group: "OVERVIEW" },
+  { href: "/meals", label: "식사 일지", icon: <Utensils size={16} />, group: "OVERVIEW" },
   { href: "/inbody", label: "인바디 (AI 분석)", icon: <Sparkles size={16} />, group: "OVERVIEW" },
   { href: "/profile", label: "프로필", icon: <User size={16} />, group: "관리" },
 ];
@@ -31,7 +31,6 @@ export default function Sidebar() {
 
   const navContent = (
     <>
-      {/* 로고 */}
       <div className="px-5 py-6 flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-lg bg-[var(--color-ink-900)] dark:bg-white/10 flex items-center justify-center">
           <span className="text-white dark:text-white text-sm font-semibold tabular">V</span>
@@ -41,7 +40,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* 메뉴 */}
       <nav className="flex-1 px-3 space-y-6 mt-2">
         {GROUPS.map((group) => (
           <div key={group}>
@@ -62,8 +60,8 @@ export default function Sidebar() {
                         : "text-[color:var(--muted-foreground)] hover:bg-black/5 dark:hover:bg-white/5"
                     }`}
                   >
-                    <span className="w-1 h-1 rounded-full bg-current opacity-50" />
-                    {item.label}
+                    <span className="opacity-70">{item.icon}</span>
+                    <span>{item.label}</span>
                   </Link>
                 );
               })}
@@ -72,7 +70,6 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* 하단 - 테마 토글 */}
       <div className="p-3 border-t border-black/5 dark:border-white/5">
         {mounted && (
           <button
@@ -89,7 +86,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* 모바일 햄버거 (sm 이하) */}
       <button
         onClick={() => setOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-30 p-2 rounded-xl bg-white/80 dark:bg-[var(--color-ink-900)]/80 backdrop-blur border border-black/5 dark:border-white/5"
@@ -98,7 +94,6 @@ export default function Sidebar() {
         <Menu size={18} />
       </button>
 
-      {/* 모바일 오버레이 */}
       {open && (
         <div
           className="lg:hidden fixed inset-0 bg-black/40 z-40"
@@ -106,7 +101,6 @@ export default function Sidebar() {
         />
       )}
 
-      {/* 사이드바 본체 */}
       <aside
         className={`
           fixed lg:sticky top-0 left-0 h-screen w-60 z-50
@@ -117,7 +111,6 @@ export default function Sidebar() {
           ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
         `}
       >
-        {/* 모바일 닫기 */}
         <button
           onClick={() => setOpen(false)}
           className="lg:hidden absolute top-4 right-4 p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"

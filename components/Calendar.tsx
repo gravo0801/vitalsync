@@ -6,13 +6,13 @@ import {
   getDay, addMonths, subMonths, isToday,
 } from "date-fns";
 import { ko } from "date-fns/locale";
-import type { WeightRecord, MealRecord, WorkoutRecord } from "@/types";
+import type { WeightRecord, MealRecord, WorkoutWithPtNumber } from "@/types";
 import { Card } from "./SummaryCards";
 
 interface Props {
   weights: WeightRecord[];
   meals: MealRecord[];
-  workouts: WorkoutRecord[];
+  workouts: WorkoutWithPtNumber[];
   onSelectDate: (date: string) => void;
 }
 
@@ -22,11 +22,18 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
   const monthEnd = endOfMonth(currentMonth);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  const getStatus = (dateStr: string) => ({
-    weight: weights.find((w) => w.date === dateStr)?.weight,
-    hasMeal: meals.some((m) => m.date === dateStr),
-    hasWorkout: workouts.some((w) => w.date === dateStr),
-  });
+  const getStatus = (dateStr: string) => {
+    const dayWorkouts = workouts.filter((w) => w.date === dateStr);
+    const ptWorkout = dayWorkouts.find((w) => w.category === "PT");
+    const personalWorkout = dayWorkouts.find((w) => w.category !== "PT");
+    return {
+      weight: weights.find((w) => w.date === dateStr)?.weight,
+      hasMeal: meals.some((m) => m.date === dateStr),
+      hasPT: !!ptWorkout,
+      hasPersonal: !!personalWorkout,
+      ptNumber: ptWorkout?.ptNumber,
+    };
+  };
 
   return (
     <Card>
@@ -53,6 +60,13 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
         </div>
       </div>
 
+      {/* 범례 */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-4 text-[11px] text-[color:var(--muted-foreground)]">
+        <LegendItem color="var(--color-terra-500)" label="식사" />
+        <LegendItem color="var(--color-sage-500)" label="개인 운동" />
+        <LegendItem color="var(--color-wine-500)" label="PT" />
+      </div>
+
       <div className="grid grid-cols-7 gap-1 text-center">
         {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
           <div
@@ -72,16 +86,23 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
           const status = getStatus(dateStr);
           const today = isToday(day);
           const dayOfWeek = getDay(day);
+
           return (
             <button
               key={dateStr}
               onClick={() => onSelectDate(dateStr)}
               className={`
-                h-14 flex flex-col items-center justify-center rounded-lg
-                hover:bg-black/4 dark:hover:bg-white/5 relative transition-colors
+                relative h-16 flex flex-col items-center justify-center rounded-lg
+                hover:bg-black/4 dark:hover:bg-white/5 transition-colors
                 ${today ? "bg-[var(--color-sage-500)]/8 ring-1 ring-[var(--color-sage-500)]/40" : ""}
               `}
             >
+              {/* PT 회차 뱃지 (우상단) */}
+              {status.hasPT && status.ptNumber && (
+                <span className="absolute top-1 right-1 text-[8px] font-semibold tabular bg-[var(--color-wine-500)] text-white px-1 py-px rounded-sm leading-none">
+                  PT{status.ptNumber}
+                </span>
+              )}
               <span
                 className={`text-sm tabular ${
                   today ? "font-semibold text-[var(--color-sage-600)] dark:text-[var(--color-sage-400)]"
@@ -100,8 +121,11 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
                 {status.hasMeal && (
                   <div className="w-1 h-1 rounded-full bg-[var(--color-terra-500)]" />
                 )}
-                {status.hasWorkout && (
-                  <div className="w-1 h-1 rounded-full bg-[var(--color-slate-blue-500)]" />
+                {status.hasPersonal && (
+                  <div className="w-1 h-1 rounded-full bg-[var(--color-sage-500)]" />
+                )}
+                {status.hasPT && (
+                  <div className="w-1 h-1 rounded-full bg-[var(--color-wine-500)]" />
                 )}
               </div>
             </button>
@@ -109,5 +133,14 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
         })}
       </div>
     </Card>
+  );
+}
+
+function LegendItem({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+      <span>{label}</span>
+    </div>
   );
 }
