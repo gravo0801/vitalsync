@@ -1,4 +1,4 @@
-import type { UserProfile, ActivityLevel, MedicationRecord } from "@/types";
+import type { UserProfile, ActivityLevel } from "@/types";
 
 const ACTIVITY_MULTIPLIER: Record<ActivityLevel, number> = {
   sedentary: 1.2,
@@ -63,20 +63,6 @@ export function calculateDailyTarget(
   return Math.round(tdee - weeklyDeficit / 7);
 }
 
-// ⭐ 단백질 목표 계산
-// GLP-1 + 저항운동 권장량: 체중 × 1.6 g/kg
-// (Murphy 2023, ISSN guidelines)
-export function calculateProteinTarget(
-  profile: UserProfile,
-  currentWeight?: number
-): number {
-  if (profile.proteinTargetG && profile.proteinTargetG > 0) {
-    return profile.proteinTargetG;
-  }
-  const weight = currentWeight && currentWeight > 0 ? currentWeight : profile.startWeightKg;
-  return Math.round(weight * 1.6);
-}
-
 export function movingAverage(
   weights: { date: string; weight: number }[],
   window = 7
@@ -99,51 +85,4 @@ export function estimateTargetDate(
   const date = new Date();
   date.setDate(date.getDate() + weeks * 7);
   return { weeks, date };
-}
-
-// ============================================
-// ⭐ 마운자로 도우미 함수
-// ============================================
-
-// 마운자로 용량 단계 (mg)
-export const MOUNJARO_DOSES = [2.5, 5, 7.5, 10, 12.5, 15] as const;
-
-// 부작용 증상 옵션
-export const SIDE_EFFECT_SYMPTOMS = [
-  "오심", "구토", "설사", "변비", "복통",
-  "소화불량", "피로", "두통", "어지럼", "역류",
-] as const;
-
-// 다음 주사일 계산 (마지막 주사일 + 7일)
-export function nextInjectionDate(
-  records: MedicationRecord[]
-): Date | null {
-  if (records.length === 0) return null;
-  const sorted = [...records].sort((a, b) =>
-    b.injectionDate.localeCompare(a.injectionDate)
-  );
-  const last = new Date(sorted[0].injectionDate);
-  last.setDate(last.getDate() + 7);
-  return last;
-}
-
-// D-day 계산
-export function daysBetween(target: Date): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const t = new Date(target);
-  t.setHours(0, 0, 0, 0);
-  const diff = Math.round((t.getTime() - today.getTime()) / 86400000);
-  return diff;
-}
-
-// 마운자로 시작 후 경과 주차
-export function weeksSinceMedicationStart(startDate: string): number {
-  if (!startDate) return 0;
-  const start = new Date(startDate);
-  const today = new Date();
-  const diff = Math.floor(
-    (today.getTime() - start.getTime()) / (7 * 86400000)
-  );
-  return Math.max(0, diff);
 }
