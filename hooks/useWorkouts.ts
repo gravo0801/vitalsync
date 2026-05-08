@@ -5,14 +5,13 @@ import {
   addDoc, deleteDoc, updateDoc, doc, Timestamp,
 } from "firebase/firestore";
 import { db, PERSONAL_USER_ID } from "@/lib/firebase";
-import type { WorkoutRecord } from "@/types";
+import type { WorkoutRecord, WorkoutCategory, BodyPart } from "@/types";
 
 export function useWorkouts() {
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ⭐ orderBy 제거 - 클라이언트에서 정렬
     const q = query(
       collection(db, "workouts"),
       where("userId", "==", PERSONAL_USER_ID)
@@ -37,6 +36,8 @@ export function useWorkouts() {
     date: string;
     duration: number;
     type?: string;
+    category?: WorkoutCategory;
+    bodyPart?: BodyPart;
     caloriesBurned?: number;
     notes?: string;
   }) => {
@@ -45,6 +46,8 @@ export function useWorkouts() {
       date: params.date,
       duration: params.duration,
       type: params.type || "",
+      category: params.category ?? "etc",
+      bodyPart: params.bodyPart,
       caloriesBurned: params.caloriesBurned ?? null,
       notes: params.notes || "",
       createdAt: Timestamp.now(),

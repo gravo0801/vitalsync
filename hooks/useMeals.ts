@@ -13,7 +13,6 @@ export function useMeals() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ⭐ orderBy 제거 - 클라이언트에서 createdAt 내림차순 정렬
     const q = query(
       collection(db, "meals"),
       where("userId", "==", PERSONAL_USER_ID)
@@ -42,6 +41,7 @@ export function useMeals() {
     date: string;
     mealType: MealType;
     calories: number | null;
+    proteinG?: number | null;
     content?: string;
     photo?: File | null;
   }) => {
@@ -59,6 +59,7 @@ export function useMeals() {
       date: params.date,
       mealType: params.mealType,
       calories: params.calories,
+      proteinG: params.proteinG ?? null,
       content: params.content || "",
       photoURL,
       createdAt: Timestamp.now(),
@@ -67,7 +68,7 @@ export function useMeals() {
 
   const updateMeal = async (
     id: string,
-    data: { mealType?: MealType; calories?: number | null; content?: string }
+    data: { mealType?: MealType; calories?: number | null; proteinG?: number | null; content?: string }
   ) => {
     await updateDoc(doc(db, "meals", id), data);
   };
