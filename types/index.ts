@@ -10,13 +10,8 @@ export type ActivityLevel =
 
 export type MealType = "아침" | "점심" | "저녁" | "간식";
 
-// ⭐ 마운자로 정보 (프로필 내에 통합)
-export interface MedicationInfo {
-  type: "mounjaro" | "ozempic" | "wegovy" | "other";
-  startDate: string; // YYYY-MM-DD
-  currentDoseMg: number; // 2.5, 5, 7.5, 10, 12.5, 15
-  injectionDayOfWeek?: number; // 0=일, 1=월, ... (주사 요일)
-}
+// ⭐ 운동 대분류
+export type WorkoutCategory = "PT" | "personal";
 
 export interface UserProfile {
   name?: string;
@@ -27,10 +22,6 @@ export interface UserProfile {
   targetWeightKg: number;
   activityLevel: ActivityLevel;
   weeklyDeficitKcal?: number;
-  // ⭐ 단백질 목표 (g/일). 미설정 시 체중 × 1.6 자동 계산
-  proteinTargetG?: number;
-  // ⭐ 마운자로 정보
-  medication?: MedicationInfo;
   updatedAt?: Timestamp;
 }
 
@@ -42,29 +33,22 @@ export interface WeightRecord {
   createdAt: Timestamp;
 }
 
-// ⭐ 식사 - 단백질 필드 추가
 export interface MealRecord {
   id: string;
   date: string;
   mealType: MealType;
   calories: number | null;
-  proteinG?: number | null; // ⭐ 단백질(g)
   content?: string;
   photoURL?: string;
   createdAt: Timestamp;
 }
 
-// ⭐ 운동 - PT 카테고리 + 부위 추가
-export type WorkoutCategory = "cardio" | "pt" | "self_strength" | "etc";
-export type BodyPart = "상체" | "하체" | "전신" | "코어";
-
 export interface WorkoutRecord {
   id: string;
   date: string;
   duration: number;
-  type?: string;
-  category?: WorkoutCategory; // ⭐ PT vs 일반 운동 분리
-  bodyPart?: BodyPart; // ⭐ PT일 때 부위
+  type?: string; // 걷기, 달리기, 헬스 등
+  category?: WorkoutCategory; // ⭐ PT or 개인운동
   caloriesBurned?: number;
   notes: string;
   createdAt: Timestamp;
@@ -104,17 +88,15 @@ export interface InbodyAnalysisResult {
   inbodyScore: number | null;
 }
 
-// ⭐ 마운자로 주사 기록
-export interface MedicationRecord {
-  id: string;
-  injectionDate: string; // YYYY-MM-DD
-  doseMg: number;
-  // 부작용 강도 (0=없음, 5=심함)
-  sideEffectScore?: number;
-  // 식욕 억제 정도 (0=평소, 5=극단적)
-  appetiteSuppressionScore?: number;
-  // 주된 부작용 (체크박스)
-  symptoms?: string[]; // ["오심", "변비", "두통", ...]
-  notes?: string;
-  createdAt: Timestamp;
+// ⭐ 통합 체중 추이용 - 체중기록 + 인바디 측정 합쳐서 timeline
+export interface CombinedWeightPoint {
+  date: string;
+  weight: number;
+  source: "weight" | "inbody";
+  recordId: string;
+}
+
+// 운동에 동적 PT 회차 부여
+export interface WorkoutWithPtNumber extends WorkoutRecord {
+  ptNumber?: number;
 }
