@@ -13,6 +13,7 @@ interface Props {
     date: string;
     mealType: MealType;
     calories: number | null;
+    proteinG?: number | null;
     content?: string;
     photo?: File | null;
   }) => Promise<void>;
@@ -24,6 +25,7 @@ export default function MealModal({ open, onClose, defaultDate, onSave }: Props)
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [mealType, setMealType] = useState<MealType>("아침");
   const [calories, setCalories] = useState("");
+  const [protein, setProtein] = useState("");
   const [content, setContent] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -34,6 +36,7 @@ export default function MealModal({ open, onClose, defaultDate, onSave }: Props)
       const h = new Date().getHours();
       setMealType(h < 10 ? "아침" : h < 15 ? "점심" : h < 20 ? "저녁" : "간식");
       setCalories("");
+      setProtein("");
       setContent("");
       setPhoto(null);
     }
@@ -46,6 +49,7 @@ export default function MealModal({ open, onClose, defaultDate, onSave }: Props)
         date,
         mealType,
         calories: calories ? parseInt(calories) : null,
+        proteinG: protein ? parseFloat(protein) : null,
         content,
         photo,
       });
@@ -107,16 +111,36 @@ export default function MealModal({ open, onClose, defaultDate, onSave }: Props)
           />
         </div>
 
-        <div>
-          <label className={labelClass}>칼로리 (선택, kcal)</label>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={calories}
-            onChange={(e) => setCalories(e.target.value)}
-            placeholder="650"
-            className={inputClass}
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className={labelClass}>칼로리 (kcal)</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={calories}
+              onChange={(e) => setCalories(e.target.value)}
+              placeholder="650"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>
+              단백질 (g) <span className="text-[var(--color-sage-600)]">★</span>
+            </label>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              value={protein}
+              onChange={(e) => setProtein(e.target.value)}
+              placeholder="35"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div className="text-[11px] text-[color:var(--muted)] -mt-2">
+          💡 PT + GLP-1 복용 중에는 단백질 추적이 매우 중요합니다 (목표 체중 × 1.6g/일)
         </div>
 
         <div>
