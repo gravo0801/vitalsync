@@ -8,7 +8,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useWeights } from "@/hooks/useWeights";
 import { useMeals } from "@/hooks/useMeals";
 import { useWorkouts } from "@/hooks/useWorkouts";
-import { useMedication } from "@/hooks/useMedication";
+import { useInbody } from "@/hooks/useInbody";
 
 import Sidebar from "@/components/Sidebar";
 import PageHeader from "@/components/PageHeader";
@@ -26,8 +26,8 @@ export default function Dashboard() {
   const { profile, loading: pLoading } = useProfile();
   const { weights, loading: wLoading, addWeight, deleteWeight } = useWeights();
   const { meals, loading: mLoading, addMeal, deleteMeal } = useMeals();
-  const { workouts, loading: woLoading, addWorkout, deleteWorkout } = useWorkouts();
-  const { records: medications } = useMedication();
+  const { workouts, loading: woLoading, totalPTCount, addWorkout, deleteWorkout } = useWorkouts();
+  const { records: inbodyRecords, loading: ibLoading } = useInbody();
 
   const [weightOpen, setWeightOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
@@ -35,13 +35,42 @@ export default function Dashboard() {
   const [dayOpen, setDayOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const loading = pLoading || wLoading || mLoading || woLoading;
+  const loading = pLoading || wLoading || mLoading || woLoading || ibLoading;
 
-  const currentWeight = useMemo(() => {
-    if (weights.length === 0) return profile?.startWeightKg ?? 0;
-    const sorted = [...weights].sort((a, b) => b.date.localeCompare(a.date));
-    return sorted[0].weight;
-  }, [weights, profile]);
+  // ⭐ 현재 체중 - 체중기록 + 인바디 통합해서 가장 최근 측정값
+  const { currentWeight, currentWeightDate, currentWeightSource } = useMemo(() => {
+    type Entry = { weight: number; date: string; source: "weight" | "inbody" };
+    const entries: Entry[] = [];
+
+    weights.forEach((w) => entries.push({ weight: w.weight, date: w.date, source: "weight" }));
+    inbodyRecords.forEach((r) => {
+      if (r.weight && r.measuredAt) {
+        entries.push({ weight: r.weight, date: r.measuredAt, source: "inbody" });
+      }
+    });
+
+    if (entries.length === 0) {
+      return {
+        currentWeight: profile?.startWeightKg ?? 0,
+        currentWeightDate: undefined,
+        currentWeightSource: undefined,
+      };
+    }
+
+    // 날짜 내림차순, 같은 날짜면 인바디 우선
+    entries.sort((a, b) => {
+      const c = b.date.localeCompare(a.date);
+      if (c !== 0) return c;
+      return a.source === "inbody" ? -1 : 1;
+    });
+
+    const top = entries[0];
+    return {
+      currentWeight: top.weight,
+      currentWeightDate: top.date,
+      currentWeightSource: top.source,
+    };
+  }, [weights, inbodyRecords, profile]);
 
   const today = format(new Date(), "yyyy-MM-dd");
   const todayKcalIn = meals
@@ -50,10 +79,6 @@ export default function Dashboard() {
   const todayKcalBurned = workouts
     .filter((w) => w.date === today)
     .reduce((s, w) => s + (w.caloriesBurned || 0), 0);
-  // ⭐ 오늘 단백질 합산
-  const todayProteinG = meals
-    .filter((m) => m.date === today)
-    .reduce((s, m) => s + (m.proteinG || 0), 0);
 
   if (loading) {
     return (
@@ -104,13 +129,17 @@ export default function Dashboard() {
           <SummaryCards
             profile={profile}
             currentWeight={currentWeight}
+            currentWeightDate={currentWeightDate}
+            currentWeightSource={currentWeightSource}
             todayKcalIn={todayKcalIn}
             todayKcalBurned={todayKcalBurned}
-            todayProteinG={todayProteinG}
-            medicationRecords={medications}
           />
 
-          <WeightChart weights={weights} targetWeight={profile.targetWeightKg} />
+          <WeightChart
+            weights={weights}
+            inbodyRecords={inbodyRecords}
+            targetWeight={profile.targetWeightKg}
+          />
 
           <RecentRecords
             weights={weights}
@@ -147,6 +176,7 @@ export default function Dashboard() {
         open={workoutOpen}
         onClose={() => setWorkoutOpen(false)}
         defaultDate={selectedDate || undefined}
+        totalPTCount={totalPTCount}
         onSave={addWorkout}
       />
       <DayDetailModal
