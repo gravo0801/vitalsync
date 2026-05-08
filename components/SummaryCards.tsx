@@ -3,9 +3,12 @@ import {
   calculateBMI,
   bmiCategory,
   calculateDailyTarget,
+  calculateProteinTarget,
   estimateTargetDate,
+  nextInjectionDate,
+  daysBetween,
 } from "@/lib/calculations";
-import type { UserProfile } from "@/types";
+import type { UserProfile, MedicationRecord } from "@/types";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -14,10 +17,13 @@ interface Props {
   currentWeight: number;
   todayKcalIn: number;
   todayKcalBurned: number;
+  todayProteinG: number;
+  medicationRecords: MedicationRecord[];
 }
 
 export default function SummaryCards({
   profile, currentWeight, todayKcalIn, todayKcalBurned,
+  todayProteinG, medicationRecords,
 }: Props) {
   const bmi = calculateBMI(currentWeight, profile.heightCm);
   const cat = bmiCategory(bmi);
@@ -38,8 +44,23 @@ export default function SummaryCards({
           (profile.startWeightKg - profile.targetWeightKg)) * 100))
     : 0;
 
+  // 단백질
+  const proteinTarget = calculateProteinTarget(profile, currentWeight);
+  const proteinPct = Math.min(100, (todayProteinG / proteinTarget) * 100);
+  const proteinColor =
+    proteinPct >= 80
+      ? "text-[var(--color-sage-600)] dark:text-[var(--color-sage-400)]"
+      : proteinPct >= 50
+      ? "text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)]"
+      : "text-[var(--color-wine-600)] dark:text-[var(--color-wine-400)]";
+
+  // 마운자로 D-day
+  const next = nextInjectionDate(medicationRecords);
+  const dDay = next ? daysBetween(next) : null;
+  const latestDose = medicationRecords[medicationRecords.length - 1]?.doseMg;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-3 mb-6">
       {/* 현재 체중 / BMI */}
       <Card accentColor="sage">
         <CardLabel>현재 <span className="serif-italic">체중</span> · BMI</CardLabel>
@@ -68,7 +89,7 @@ export default function SummaryCards({
           목표 {profile.targetWeightKg}kg
           {eta && (
             <>
-              {" "}· 예상 도달{" "}
+              {" "}· 예상{" "}
               <span className="text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)]">
                 {format(eta.date, "yy.MM.dd", { locale: ko })}
               </span>
@@ -97,6 +118,64 @@ export default function SummaryCards({
           {todayKcalBurned > 0 && ` · 소모 ${todayKcalBurned.toLocaleString()}`}
         </div>
       </Card>
+
+      {/* 단백질 */}
+      <Card accentColor="slate-blue">
+        <CardLabel>오늘 <span className="serif-italic">단백질</span></CardLabel>
+        <div className="flex items-baseline gap-2 mt-3">
+          <span className={`text-3xl font-semibold tabular tracking-tight ${proteinColor}`}>
+            {todayProteinG.toFixed(0)}
+          </span>
+          <span className="text-sm text-[color:var(--muted)]">/ {proteinTarget}g</span>
+        </div>
+        <div className="text-xs text-[color:var(--muted)] mt-2 tabular">
+          {proteinPct.toFixed(0)}% 달성 · 근손실 방지 핵심
+        </div>
+        <div className="progress-bar mt-2.5">
+          <div
+            className="h-full bg-[var(--color-slate-blue-500)] transition-all"
+            style={{ width: `${proteinPct}%` }}
+          />
+        </div>
+      </Card>
+
+      {/* 마운자로 D-day (기록 있을 때만) */}
+      {next && dDay !== null && (
+        <Card accentColor="mauve">
+          <CardLabel>마운자로 <span className="serif-italic">다음 주사</span></CardLabel>
+          <div className="flex items-baseline gap-2 mt-3">
+            <span className="text-3xl font-semibold tabular tracking-tight">
+              {dDay === 0 ? (
+                <span className="text-[var(--color-mauve-500)]">D-DAY</span>
+              ) : dDay < 0 ? (
+                <span className="text-[var(--color-wine-500)]">{Math.abs(dDay)}일 지남</span>
+              ) : (
+                <>D-{dDay}</>
+              )}
+            </span>
+          </div>
+          <div className="text-xs text-[color:var(--muted)] mt-2 tabular">
+            {format(next, "MM.dd (E)", { locale: ko })}
+            {latestDose && <> · {latestDose}mg</>}
+          </div>
+        </Card>
+      )}
+
+      {/* 마운자로 안 쓰면 - 안내 카드 */}
+      {!next && (
+        <Card accentColor="mauve">
+          <CardLabel>마운자로 <span className="serif-italic">트래커</span></CardLabel>
+          <div className="text-sm font-medium mt-3 text-[color:var(--muted-foreground)]">
+            아직 기록이 없어요
+          </div>
+          <a
+            href="/medication"
+            className="inline-block mt-3 text-xs px-3 py-1.5 rounded-lg bg-[var(--color-mauve-500)] text-white hover:opacity-90"
+          >
+            주사 기록 시작 →
+          </a>
+        </Card>
+      )}
     </div>
   );
 }
