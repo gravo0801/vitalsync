@@ -2,69 +2,40 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { Dumbbell, User } from "lucide-react";
 import Modal, { inputClass, labelClass, PrimaryButton, SecondaryButton } from "./Modal";
-import type { WorkoutCategory, BodyPart } from "@/types";
+import type { WorkoutCategory } from "@/types";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   defaultDate?: string;
+  totalPTCount: number; // 현재까지 PT 누적 횟수 (다음 PT 회차 미리보기용)
   onSave: (params: {
     date: string;
     duration: number;
     type?: string;
     category?: WorkoutCategory;
-    bodyPart?: BodyPart;
     caloriesBurned?: number;
     notes?: string;
   }) => Promise<void>;
 }
 
-// 카테고리별 운동 종류 + MET 값 (98kg 기준)
-const CATEGORIES: {
-  key: WorkoutCategory;
-  label: string;
-  types: { name: string; met: number }[];
-}[] = [
-  {
-    key: "pt",
-    label: "PT",
-    types: [
-      { name: "PT 세션", met: 5.5 },
-    ],
-  },
-  {
-    key: "self_strength",
-    label: "혼자 헬스",
-    types: [
-      { name: "헬스", met: 5.0 },
-      { name: "홈트", met: 4.5 },
-    ],
-  },
-  {
-    key: "cardio",
-    label: "유산소",
-    types: [
-      { name: "걷기", met: 3.5 },
-      { name: "달리기", met: 8.0 },
-      { name: "자전거", met: 6.0 },
-      { name: "수영", met: 7.0 },
-    ],
-  },
-  {
-    key: "etc",
-    label: "기타",
-    types: [{ name: "기타", met: 4.0 }],
-  },
-];
+const PERSONAL_TYPES = ["걷기", "달리기", "자전거", "수영", "헬스", "홈트", "기타"];
+const PT_TYPES = ["근력", "유산소", "코어", "스트레칭", "복합", "기타"];
 
-const BODY_PARTS: BodyPart[] = ["상체", "하체", "전신", "코어"];
+const MET: Record<string, number> = {
+  걷기: 3.5, 달리기: 8.0, 자전거: 6.0, 수영: 7.0,
+  헬스: 5.0, 홈트: 4.5, 근력: 5.5, 유산소: 7.0,
+  코어: 4.0, 스트레칭: 2.5, 복합: 6.5, 기타: 4.0,
+};
 
-export default function WorkoutModal({ open, onClose, defaultDate, onSave }: Props) {
+export default function WorkoutModal({
+  open, onClose, defaultDate, totalPTCount, onSave,
+}: Props) {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [category, setCategory] = useState<WorkoutCategory>("pt");
-  const [type, setType] = useState("PT 세션");
-  const [bodyPart, setBodyPart] = useState<BodyPart>("전신");
+  const [category, setCategory] = useState<WorkoutCategory>("personal");
+  const [type, setType] = useState("걷기");
   const [duration, setDuration] = useState("");
   const [calories, setCalories] = useState("");
   const [notes, setNotes] = useState("");
@@ -73,36 +44,32 @@ export default function WorkoutModal({ open, onClose, defaultDate, onSave }: Pro
   useEffect(() => {
     if (open) {
       setDate(defaultDate || format(new Date(), "yyyy-MM-dd"));
-      setCategory("pt");
-      setType("PT 세션");
-      setBodyPart("전신");
+      setCategory("personal");
+      setType("걷기");
       setDuration("");
       setCalories("");
       setNotes("");
     }
   }, [open, defaultDate]);
 
-  // 종류 자동 추정
+  // 카테고리 변경 시 type 기본값 변경
   useEffect(() => {
-    const types = CATEGORIES.find((c) => c.key === category)?.types ?? [];
-    if (types.length > 0 && !types.some((t) => t.name === type)) {
-      setType(types[0].name);
-    }
-  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (category === "PT") setType("근력");
+    else setType("걷기");
+    setCalories("");
+  }, [category]);
 
-  // 칼로리 자동 추정
+  // 자동 칼로리 추정
   useEffect(() => {
     if (duration && type && !calories) {
       const min = parseInt(duration);
       if (!isNaN(min) && min > 0) {
-        const cat = CATEGORIES.find((c) => c.key === category);
-        const t = cat?.types.find((x) => x.name === type);
-        const met = t?.met ?? 4;
+        const met = MET[type] ?? 4;
         const kcal = Math.round((met * 98 * min) / 60);
         setCalories(kcal.toString());
       }
     }
-  }, [type, duration, category]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [type, duration]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = async () => {
     if (!duration) {
@@ -121,7 +88,6 @@ export default function WorkoutModal({ open, onClose, defaultDate, onSave }: Pro
         duration: min,
         type,
         category,
-        bodyPart: category === "pt" || category === "self_strength" ? bodyPart : undefined,
         caloriesBurned: calories ? parseInt(calories) : undefined,
         notes,
       });
@@ -134,8 +100,8 @@ export default function WorkoutModal({ open, onClose, defaultDate, onSave }: Pro
     }
   };
 
-  const currentTypes = CATEGORIES.find((c) => c.key === category)?.types ?? [];
-  const showBodyPart = category === "pt" || category === "self_strength";
+  const TYPES = category === "PT" ? PT_TYPES : PERSONAL_TYPES;
+  const nextPTNumber = totalPTCount + 1;
 
   return (
     <Modal
@@ -146,6 +112,29 @@ export default function WorkoutModal({ open, onClose, defaultDate, onSave }: Pro
       zIndex={70}
     >
       <div className="space-y-4">
+        {/* ⭐ 운동 유형 - PT vs 개인운동 */}
+        <div>
+          <label className={labelClass}>운동 유형</label>
+          <div className="grid grid-cols-2 gap-2">
+            <CategoryButton
+              active={category === "personal"}
+              onClick={() => setCategory("personal")}
+              color="sage"
+              icon={<User size={16} />}
+              title="개인 운동"
+              subtitle="혼자 운동"
+            />
+            <CategoryButton
+              active={category === "PT"}
+              onClick={() => setCategory("PT")}
+              color="wine"
+              icon={<Dumbbell size={16} />}
+              title="PT"
+              subtitle={category === "PT" ? `${nextPTNumber}회차` : "퍼스널 트레이닝"}
+            />
+          </div>
+        </div>
+
         <div>
           <label className={labelClass}>날짜</label>
           <input
@@ -156,82 +145,31 @@ export default function WorkoutModal({ open, onClose, defaultDate, onSave }: Pro
           />
         </div>
 
-        {/* 카테고리 */}
         <div>
-          <label className={labelClass}>카테고리</label>
-          <div className="grid grid-cols-4 gap-1.5">
-            {CATEGORIES.map((c) => (
+          <label className={labelClass}>
+            {category === "PT" ? "PT 종목" : "운동 종류"}
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {TYPES.map((t) => (
               <button
-                key={c.key}
+                key={t}
                 onClick={() => {
-                  setCategory(c.key);
+                  setType(t);
                   setCalories("");
                 }}
-                className={`py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  category === c.key
-                    ? c.key === "pt"
-                      ? "bg-[var(--color-mauve-500)] text-white"
+                className={`px-3.5 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  type === t
+                    ? category === "PT"
+                      ? "bg-[var(--color-wine-500)] text-white"
                       : "bg-[var(--color-slate-blue-500)] text-white"
                     : "bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10"
                 }`}
               >
-                {c.label}
+                {t}
               </button>
             ))}
           </div>
-          {category === "pt" && (
-            <p className="text-[11px] text-[var(--color-mauve-500)] mt-1.5">
-              💪 GLP-1 복용 중 PT는 근손실 방지 핵심입니다
-            </p>
-          )}
         </div>
-
-        {/* 운동 종류 */}
-        {currentTypes.length > 1 && (
-          <div>
-            <label className={labelClass}>운동 종류</label>
-            <div className="flex flex-wrap gap-1.5">
-              {currentTypes.map((t) => (
-                <button
-                  key={t.name}
-                  onClick={() => {
-                    setType(t.name);
-                    setCalories("");
-                  }}
-                  className={`px-3.5 py-2 rounded-xl text-sm font-medium transition-colors ${
-                    type === t.name
-                      ? "bg-[var(--color-slate-blue-500)] text-white"
-                      : "bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10"
-                  }`}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 부위 (PT/혼자 헬스만) */}
-        {showBodyPart && (
-          <div>
-            <label className={labelClass}>운동 부위</label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {BODY_PARTS.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setBodyPart(p)}
-                  className={`py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                    bodyPart === p
-                      ? "bg-[var(--color-mauve-500)] text-white"
-                      : "bg-black/4 dark:bg-white/5"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div>
           <label className={labelClass}>시간 (분)</label>
@@ -243,7 +181,7 @@ export default function WorkoutModal({ open, onClose, defaultDate, onSave }: Pro
               setDuration(e.target.value);
               setCalories("");
             }}
-            placeholder="60"
+            placeholder={category === "PT" ? "60" : "30"}
             className={`${inputClass} text-2xl font-semibold tabular`}
             autoFocus
           />
@@ -266,7 +204,11 @@ export default function WorkoutModal({ open, onClose, defaultDate, onSave }: Pro
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="강도, 무게, 세트, 컨디션 등"
+            placeholder={
+              category === "PT"
+                ? "트레이너, 강도, 부위 등"
+                : "장소, 강도 등"
+            }
             rows={2}
             className={`${inputClass} resize-none`}
           />
@@ -275,10 +217,46 @@ export default function WorkoutModal({ open, onClose, defaultDate, onSave }: Pro
 
       <div className="flex gap-2 mt-6">
         <SecondaryButton onClick={onClose}>취소</SecondaryButton>
-        <PrimaryButton onClick={submit} disabled={saving} color="slate-blue">
+        <PrimaryButton
+          onClick={submit}
+          disabled={saving}
+          color={category === "PT" ? "wine" : "slate-blue"}
+        >
           {saving ? "저장 중..." : "기록"}
         </PrimaryButton>
       </div>
     </Modal>
+  );
+}
+
+function CategoryButton({
+  active, onClick, color, icon, title, subtitle,
+}: {
+  active: boolean;
+  onClick: () => void;
+  color: "sage" | "wine";
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  const colorVar = `var(--color-${color}-500)`;
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        relative px-4 py-3 rounded-xl border-2 text-left transition-all
+        ${active
+          ? "bg-white dark:bg-[var(--color-ink-900)] shadow-sm"
+          : "bg-black/3 dark:bg-white/3 border-transparent hover:border-black/8 dark:hover:border-white/8"
+        }
+      `}
+      style={active ? { borderColor: colorVar } : undefined}
+    >
+      <div className="flex items-center gap-2 mb-0.5">
+        <span style={{ color: active ? colorVar : "var(--muted)" }}>{icon}</span>
+        <span className="text-sm font-semibold">{title}</span>
+      </div>
+      <div className="text-[11px] text-[color:var(--muted)] ml-6">{subtitle}</div>
+    </button>
   );
 }

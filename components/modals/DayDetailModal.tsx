@@ -1,10 +1,10 @@
 "use client";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Dumbbell, User } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "./Modal";
-import type { WeightRecord, MealRecord, WorkoutRecord } from "@/types";
+import type { WeightRecord, MealRecord, WorkoutWithPtNumber } from "@/types";
 
 interface Props {
   open: boolean;
@@ -12,7 +12,7 @@ interface Props {
   date: string | null;
   weights: WeightRecord[];
   meals: MealRecord[];
-  workouts: WorkoutRecord[];
+  workouts: WorkoutWithPtNumber[];
   onAddWeight: () => void;
   onAddMeal: () => void;
   onAddWorkout: () => void;
@@ -79,7 +79,9 @@ export default function DayDetailModal({
           ) : (
             dayWeights.map((w) => (
               <Row key={w.id} onDelete={() => handleDelete(() => onDeleteWeight(w.id))}>
-                <span className="font-semibold tabular">{w.weight} <span className="text-xs font-normal text-[color:var(--muted)]">kg</span></span>
+                <span className="font-semibold tabular">
+                  {w.weight} <span className="text-xs font-normal text-[color:var(--muted)]">kg</span>
+                </span>
                 {w.memo && (
                   <span className="text-xs text-[color:var(--muted)] ml-2">{w.memo}</span>
                 )}
@@ -121,7 +123,20 @@ export default function DayDetailModal({
             dayWorkouts.map((w) => (
               <Row key={w.id} onDelete={() => handleDelete(() => onDeleteWorkout(w.id))}>
                 <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* ⭐ 카테고리 뱃지 */}
+                    {w.category === "PT" ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-[var(--color-wine-500)] text-white px-1.5 py-0.5 rounded">
+                        <Dumbbell size={9} />
+                        PT
+                        {w.ptNumber && <span className="tabular">{w.ptNumber}회차</span>}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-[var(--color-sage-500)] text-white px-1.5 py-0.5 rounded">
+                        <User size={9} />
+                        개인
+                      </span>
+                    )}
                     <span className="text-sm font-medium">{w.type || "운동"}</span>
                     <span className="text-xs text-[color:var(--muted)] tabular">{w.duration}분</span>
                     {w.caloriesBurned != null && (
