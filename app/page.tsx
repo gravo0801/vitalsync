@@ -8,6 +8,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useWeights } from "@/hooks/useWeights";
 import { useMeals } from "@/hooks/useMeals";
 import { useWorkouts } from "@/hooks/useWorkouts";
+import { useMedication } from "@/hooks/useMedication";
 
 import Sidebar from "@/components/Sidebar";
 import PageHeader from "@/components/PageHeader";
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const { weights, loading: wLoading, addWeight, deleteWeight } = useWeights();
   const { meals, loading: mLoading, addMeal, deleteMeal } = useMeals();
   const { workouts, loading: woLoading, addWorkout, deleteWorkout } = useWorkouts();
+  const { records: medications } = useMedication();
 
   const [weightOpen, setWeightOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
@@ -48,6 +50,10 @@ export default function Dashboard() {
   const todayKcalBurned = workouts
     .filter((w) => w.date === today)
     .reduce((s, w) => s + (w.caloriesBurned || 0), 0);
+  // ⭐ 오늘 단백질 합산
+  const todayProteinG = meals
+    .filter((m) => m.date === today)
+    .reduce((s, m) => s + (m.proteinG || 0), 0);
 
   if (loading) {
     return (
@@ -57,7 +63,6 @@ export default function Dashboard() {
     );
   }
 
-  // 프로필 없으면 안내
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
@@ -101,6 +106,8 @@ export default function Dashboard() {
             currentWeight={currentWeight}
             todayKcalIn={todayKcalIn}
             todayKcalBurned={todayKcalBurned}
+            todayProteinG={todayProteinG}
+            medicationRecords={medications}
           />
 
           <WeightChart weights={weights} targetWeight={profile.targetWeightKg} />
@@ -124,7 +131,6 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* 모달들 */}
       <WeightModal
         open={weightOpen}
         onClose={() => setWeightOpen(false)}
