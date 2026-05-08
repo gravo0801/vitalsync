@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   collection, onSnapshot, query, where,
   addDoc, deleteDoc, updateDoc, doc, Timestamp,
 } from "firebase/firestore";
 import { db, PERSONAL_USER_ID } from "@/lib/firebase";
-import type { WorkoutRecord, WorkoutCategory, BodyPart } from "@/types";
+import type { WorkoutCategory, WorkoutRecord, WorkoutWithPtNumber } from "@/types";
 
 export function useWorkouts() {
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>([]);
@@ -32,12 +32,35 @@ export function useWorkouts() {
     return () => unsub();
   }, []);
 
+  // ⭐ PT 회차를 동적으로 계산 (저장 X)
+  // 날짜 + createdAt 순서로 PT만 추출 → 1, 2, 3... 부여
+  const workoutsWithPt = useMemo<WorkoutWithPtNumber[]>(() => {
+    const ptOrdered = [...workouts]
+      .filter((w) => w.category === "PT")
+      .sort((a, b) => {
+        // 1차: 날짜 오름차순
+        const cmp = a.date.localeCompare(b.date);
+        if (cmp !== 0) return cmp;
+        // 2차: createdAt 오름차순 (같은 날 여러 PT 시)
+        const ta = a.createdAt?.toMillis?.() ?? 0;
+        const tb = b.createdAt?.toMillis?.() ?? 0;
+        return ta - tb;
+      });
+
+    const ptNumberMap = new Map<string, number>();
+    ptOrdered.forEach((w, idx) => ptNumberMap.set(w.id, idx + 1));
+
+    return workouts.map((w) => ({
+      ...w,
+      ptNumber: ptNumberMap.get(w.id),
+    }));
+  }, [workouts]);
+
   const addWorkout = async (params: {
     date: string;
     duration: number;
     type?: string;
     category?: WorkoutCategory;
-    bodyPart?: BodyPart;
     caloriesBurned?: number;
     notes?: string;
   }) => {
@@ -46,8 +69,7 @@ export function useWorkouts() {
       date: params.date,
       duration: params.duration,
       type: params.type || "",
-      category: params.category ?? "etc",
-      bodyPart: params.bodyPart,
+      category: params.category || "personal",
       caloriesBurned: params.caloriesBurned ?? null,
       notes: params.notes || "",
       createdAt: Timestamp.now(),
@@ -65,5 +87,18 @@ export function useWorkouts() {
     await deleteDoc(doc(db, "workouts", id));
   };
 
-  return { workouts, loading, addWorkout, updateWorkout, deleteWorkout };
+  // 누적 PT 횟수 (PT 모달의 미리보기용)
+  const totalPTCount = useMemo(
+    () => workouts.filter((w) => w.category === "PT").length,
+    [workouts]
+  );
+
+  return {
+    workouts: workoutsWithPt,
+    loading,
+    totalPTCount,
+    addWorkout,
+    updateWorkout,
+    deleteWorkout,
+  };
 }
