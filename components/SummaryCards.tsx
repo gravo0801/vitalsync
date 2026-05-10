@@ -58,6 +58,14 @@ export default function SummaryCards({
     : undefined;
   const nextDueDate = lastShot ? addDays(parseISO(lastShot.date), 7) : null;
   const dDay = nextDueDate ? differenceInCalendarDays(nextDueDate, now) : null;
+  const dueLabel =
+    dDay == null
+      ? null
+      : dDay > 0
+      ? `D-${dDay}`
+      : dDay === 0
+      ? "오늘"
+      : `${Math.abs(dDay)}일 지연`;
   const bmi = calculateBMI(currentWeight, profile.heightCm);
   const cat = bmiCategory(bmi);
   const dailyTarget = calculateDailyTarget(profile, currentWeight);
@@ -166,8 +174,13 @@ export default function SummaryCards({
                 {format(parseISO(thisWeekShot.date), "M.d (E)", { locale: ko })} 기록됨
               </div>
               {dDay != null && (
-                <div className="text-[11px] text-[var(--color-mauve-500)] mt-1">
-                  다음 {dDay > 0 ? `D-${dDay}` : dDay === 0 ? "오늘" : `${-dDay}일 지연`}
+                <div className="text-[11px] text-[var(--color-mauve-500)] mt-1 tabular">
+                  다음 예정 {format(nextDueDate!, "M.d (E)", { locale: ko })} · {dueLabel}
+                </div>
+              )}
+              {(thisWeekShot.appetiteSuppression != null || thisWeekShot.nauseaLevel != null) && (
+                <div className="text-[11px] text-[color:var(--muted)] mt-1 tabular">
+                  식욕 {thisWeekShot.appetiteSuppression ?? "—"}/10 · 오심 {thisWeekShot.nauseaLevel ?? "—"}/10
                 </div>
               )}
             </>
@@ -179,8 +192,8 @@ export default function SummaryCards({
                 </span>
               </div>
               <div className="text-xs text-[color:var(--muted)] mt-2">
-                {dDay != null && dDay <= 0
-                  ? "이번 주 주사 일정"
+                {nextDueDate
+                  ? `다음 예정 ${format(nextDueDate, "M.d (E)", { locale: ko })} · ${dueLabel}`
                   : "이번 주 주사 기록을 남겨주세요"}
               </div>
               {onAddMedication && (

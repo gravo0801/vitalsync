@@ -17,6 +17,11 @@ interface Props {
     doseMg: MounjaroDose;
     injectionSite?: InjectionSite;
     sideEffects?: string;
+    appetiteSuppression?: number;
+    nauseaLevel?: number;
+    constipation?: boolean;
+    diarrhea?: boolean;
+    fatigue?: boolean;
     weightKgAtInjection?: number;
   }) => Promise<void>;
 }
@@ -34,6 +39,11 @@ export default function MedicationModal({
   const [dose, setDose] = useState<MounjaroDose>(2.5);
   const [site, setSite] = useState<InjectionSite | undefined>(undefined);
   const [sideEffects, setSideEffects] = useState("");
+  const [appetiteSuppression, setAppetiteSuppression] = useState("5");
+  const [nauseaLevel, setNauseaLevel] = useState("0");
+  const [constipation, setConstipation] = useState(false);
+  const [diarrhea, setDiarrhea] = useState(false);
+  const [fatigue, setFatigue] = useState(false);
   const [weight, setWeight] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -43,6 +53,11 @@ export default function MedicationModal({
       setDose(defaultDose ?? 2.5);
       setSite(undefined);
       setSideEffects("");
+      setAppetiteSuppression("5");
+      setNauseaLevel("0");
+      setConstipation(false);
+      setDiarrhea(false);
+      setFatigue(false);
       setWeight(bodyWeightKg ? bodyWeightKg.toString() : "");
     }
   }, [open, defaultDate, defaultDose, bodyWeightKg]);
@@ -61,6 +76,11 @@ export default function MedicationModal({
         doseMg: dose,
         injectionSite: site,
         sideEffects: sideEffects || undefined,
+        appetiteSuppression: Number(appetiteSuppression),
+        nauseaLevel: Number(nauseaLevel),
+        constipation,
+        diarrhea,
+        fatigue,
         weightKgAtInjection: w,
       });
       toast.success("주사 기록이 저장되었습니다");
@@ -146,6 +166,45 @@ export default function MedicationModal({
         </div>
 
         <div>
+          <label className={labelClass}>식욕 억제 정도: {appetiteSuppression}/10</label>
+          <input
+            type="range"
+            min={0}
+            max={10}
+            value={appetiteSuppression}
+            onChange={(e) => setAppetiteSuppression(e.target.value)}
+            className="w-full accent-[var(--color-mauve-500)]"
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>오심 정도: {nauseaLevel}/10</label>
+          <input
+            type="range"
+            min={0}
+            max={10}
+            value={nauseaLevel}
+            onChange={(e) => setNauseaLevel(e.target.value)}
+            className="w-full accent-[var(--color-mauve-500)]"
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>이번 주 증상 체크</label>
+          <div className="grid grid-cols-3 gap-1.5">
+            <SymptomButton active={constipation} onClick={() => setConstipation((v) => !v)}>
+              변비
+            </SymptomButton>
+            <SymptomButton active={diarrhea} onClick={() => setDiarrhea((v) => !v)}>
+              설사
+            </SymptomButton>
+            <SymptomButton active={fatigue} onClick={() => setFatigue((v) => !v)}>
+              피로
+            </SymptomButton>
+          </div>
+        </div>
+
+        <div>
           <label className={labelClass}>부작용 / 메모 (선택)</label>
           <textarea
             value={sideEffects}
@@ -168,5 +227,29 @@ export default function MedicationModal({
         </PrimaryButton>
       </div>
     </Modal>
+  );
+}
+
+function SymptomButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`py-2.5 rounded-xl text-sm font-medium transition-colors ${
+        active
+          ? "bg-[var(--color-mauve-500)] text-white"
+          : "bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

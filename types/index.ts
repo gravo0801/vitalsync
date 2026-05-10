@@ -115,6 +115,11 @@ export interface MedicationRecord {
   doseMg: MounjaroDose;
   injectionSite?: InjectionSite | null;
   sideEffects?: string;
+  appetiteSuppression?: number | null;
+  nauseaLevel?: number | null;
+  constipation?: boolean;
+  diarrhea?: boolean;
+  fatigue?: boolean;
   weightKgAtInjection?: number | null;
   createdAt: Timestamp;
 }

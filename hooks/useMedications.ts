@@ -45,6 +45,11 @@ export function useMedications() {
     doseMg: MounjaroDose;
     injectionSite?: InjectionSite;
     sideEffects?: string;
+    appetiteSuppression?: number;
+    nauseaLevel?: number;
+    constipation?: boolean;
+    diarrhea?: boolean;
+    fatigue?: boolean;
     weightKgAtInjection?: number;
   }) => {
     await addDoc(collection(db, "medications"), {
@@ -54,6 +59,11 @@ export function useMedications() {
       doseMg: params.doseMg,
       injectionSite: params.injectionSite ?? null,
       sideEffects: params.sideEffects || "",
+      appetiteSuppression: params.appetiteSuppression ?? null,
+      nauseaLevel: params.nauseaLevel ?? null,
+      constipation: params.constipation ?? false,
+      diarrhea: params.diarrhea ?? false,
+      fatigue: params.fatigue ?? false,
       weightKgAtInjection: params.weightKgAtInjection ?? null,
       createdAt: Timestamp.now(),
     });
@@ -61,7 +71,18 @@ export function useMedications() {
 
   const updateMedication = async (
     id: string,
-    data: Partial<Pick<MedicationRecord, "doseMg" | "injectionSite" | "sideEffects" | "weightKgAtInjection">>
+    data: Partial<Pick<
+      MedicationRecord,
+      | "doseMg"
+      | "injectionSite"
+      | "sideEffects"
+      | "appetiteSuppression"
+      | "nauseaLevel"
+      | "constipation"
+      | "diarrhea"
+      | "fatigue"
+      | "weightKgAtInjection"
+    >>
   ) => {
     await updateDoc(doc(db, "medications", id), data);
   };

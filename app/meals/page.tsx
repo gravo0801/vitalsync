@@ -191,6 +191,7 @@ function DayGroup({
   onDelete: (m: MealRecord) => void;
 }) {
   const totalKcal = meals.reduce((s, m) => s + (m.calories || 0), 0);
+  const unknownKcalCount = meals.filter((m) => m.calories == null).length;
   const net = totalKcal - todayWorkoutKcal;
   const remaining = dailyTarget - net;
   const overTarget = remaining < 0;
@@ -227,6 +228,11 @@ function DayGroup({
             </span>
             <span className="text-xs text-[color:var(--muted)]">kcal</span>
           </div>
+          {unknownKcalCount > 0 && (
+            <div className="text-[10px] text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)] mt-0.5">
+              {unknownKcalCount}끼니 칼로리 미입력
+            </div>
+          )}
           <div className={`text-[11px] tabular ${
             overTarget
               ? "text-[var(--color-wine-600)] dark:text-[var(--color-wine-400)]"
@@ -302,12 +308,16 @@ function MealCard({
         ) : (
           <p className="text-xs italic text-[color:var(--muted)] mb-1.5">내용 없음</p>
         )}
-        {meal.calories != null && (
+        {meal.calories != null ? (
           <div className="flex items-baseline gap-1 mt-1">
             <span className="text-sm font-semibold tabular text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)]">
               {meal.calories}
             </span>
             <span className="text-[10px] text-[color:var(--muted)]">kcal</span>
+          </div>
+        ) : (
+          <div className="text-[10px] text-[color:var(--muted)] mt-1">
+            칼로리 미입력
           </div>
         )}
       </div>

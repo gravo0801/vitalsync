@@ -28,7 +28,7 @@ export default function Dashboard() {
   const { profile, loading: pLoading } = useProfile();
   const { weights, loading: wLoading, addWeight, deleteWeight } = useWeights();
   const { meals, loading: mLoading, addMeal, deleteMeal } = useMeals();
-  const { workouts, loading: woLoading, totalPTCount, addWorkout, deleteWorkout } = useWorkouts();
+  const { workouts, loading: woLoading, nextPTNumber, addWorkout, deleteWorkout } = useWorkouts();
   const { records: inbodyRecords, loading: ibLoading } = useInbody();
   const {
     medications,
@@ -196,7 +196,7 @@ export default function Dashboard() {
         open={workoutOpen}
         onClose={() => setWorkoutOpen(false)}
         defaultDate={selectedDate || undefined}
-        totalPTCount={totalPTCount}
+        nextPTNumber={nextPTNumber}
         bodyWeightKg={currentWeight}
         onSave={addWorkout}
       />

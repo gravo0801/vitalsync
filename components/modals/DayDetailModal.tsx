@@ -43,6 +43,7 @@ export default function DayDetailModal({
   const dayMedications = medications.filter((m) => m.date === date);
 
   const totalKcalIn = dayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+  const unknownMealKcalCount = dayMeals.filter((m) => m.calories == null).length;
   const totalKcalOut = dayWorkouts.reduce((s, w) => s + (w.caloriesBurned || 0), 0);
 
   const handleDelete = async (fn: () => Promise<void>) => {
@@ -72,6 +73,11 @@ export default function DayDetailModal({
             <div className="text-xl font-semibold text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)] tabular mt-0.5">
               {totalKcalIn.toLocaleString()} <span className="text-xs font-normal">kcal</span>
             </div>
+            {unknownMealKcalCount > 0 && (
+              <div className="text-[10px] text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)] mt-1">
+                {unknownMealKcalCount}끼니 미입력
+              </div>
+            )}
           </div>
           <div className="rounded-xl p-3.5 bg-[var(--color-slate-blue-50)] dark:bg-[var(--color-slate-blue-500)]/10 border border-[var(--color-slate-blue-500)]/20">
             <div className="text-[11px] text-[var(--color-slate-blue-600)] dark:text-[var(--color-slate-blue-400)] tracking-wide">
@@ -112,6 +118,11 @@ export default function DayDetailModal({
                     {m.calories != null && (
                       <span className="text-xs tabular text-[var(--color-terra-600)] dark:text-[var(--color-terra-400)]">
                         {m.calories} kcal
+                      </span>
+                    )}
+                    {m.calories == null && (
+                      <span className="text-xs text-[color:var(--muted)]">
+                        kcal 미입력
                       </span>
                     )}
                   </div>
@@ -205,8 +216,21 @@ export default function DayDetailModal({
                         </span>
                       )}
                     </div>
+                    {(m.appetiteSuppression != null || m.nauseaLevel != null) && (
+                      <div className="flex items-center gap-2 text-[11px] text-[color:var(--muted)] mt-1 tabular">
+                        <span>식욕 {m.appetiteSuppression ?? "—"}/10</span>
+                        <span>오심 {m.nauseaLevel ?? "—"}/10</span>
+                      </div>
+                    )}
+                    {(m.constipation || m.diarrhea || m.fatigue) && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {m.constipation && <SymptomChip>변비</SymptomChip>}
+                        {m.diarrhea && <SymptomChip>설사</SymptomChip>}
+                        {m.fatigue && <SymptomChip>피로</SymptomChip>}
+                      </div>
+                    )}
                     {m.sideEffects && (
-                      <span className="text-xs text-[color:var(--muted-foreground)] mt-0.5 truncate">
+                      <span className="text-xs text-[color:var(--muted-foreground)] mt-1 whitespace-pre-line">
                         {m.sideEffects}
                       </span>
                     )}
@@ -225,6 +249,14 @@ export default function DayDetailModal({
         닫기
       </button>
     </Modal>
+  );
+}
+
+function SymptomChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-md bg-[var(--color-mauve-500)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-mauve-500)]">
+      {children}
+    </span>
   );
 }
 

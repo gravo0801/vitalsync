@@ -106,16 +106,19 @@ export function useWorkouts() {
     await deleteDoc(doc(db, "workouts", id));
   };
 
-  // 누적 PT 횟수 (PT 모달의 미리보기용)
-  const totalPTCount = useMemo(
-    () => workouts.filter((w) => w.category === "PT").length,
-    [workouts]
-  );
+  // PT 모달 기본값: 단순 개수보다 "현재 쓰인 최대 회차 + 1"이 실제 회차 흐름에 맞음
+  const nextPTNumber = useMemo(() => {
+    const ptNumbers = workoutsWithPt
+      .filter((w) => w.category === "PT" && typeof w.ptNumber === "number")
+      .map((w) => w.ptNumber as number);
+    return ptNumbers.length > 0 ? Math.max(...ptNumbers) + 1 : 1;
+  }, [workoutsWithPt]);
 
   return {
     workouts: workoutsWithPt,
     loading,
-    totalPTCount,
+    totalPTCount: nextPTNumber - 1,
+    nextPTNumber,
     addWorkout,
     updateWorkout,
     deleteWorkout,

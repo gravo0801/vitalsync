@@ -10,7 +10,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   defaultDate?: string;
-  totalPTCount: number; // 현재까지 PT 누적 횟수 (다음 PT 회차 미리보기용)
+  nextPTNumber: number;
   bodyWeightKg?: number;
   onSave: (params: {
     date: string;
@@ -34,7 +34,7 @@ const MET: Record<string, number> = {
 };
 
 export default function WorkoutModal({
-  open, onClose, defaultDate, totalPTCount, bodyWeightKg, onSave,
+  open, onClose, defaultDate, nextPTNumber, bodyWeightKg, onSave,
 }: Props) {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [category, setCategory] = useState<WorkoutCategory>("personal");
@@ -62,10 +62,10 @@ export default function WorkoutModal({
   // PT 모드 진입 시 회차 기본값을 다음 회차로
   useEffect(() => {
     if (category === "PT" && !ptNumber) {
-      setPtNumber(String(totalPTCount + 1));
+      setPtNumber(String(nextPTNumber));
     }
     if (category !== "PT") setPtNumber("");
-  }, [category, totalPTCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [category, nextPTNumber]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 카테고리 변경 시 type 기본값 변경
   useEffect(() => {
@@ -178,7 +178,7 @@ export default function WorkoutModal({
                 min={1}
                 value={ptNumber}
                 onChange={(e) => setPtNumber(e.target.value)}
-                placeholder={String(totalPTCount + 1)}
+                placeholder={String(nextPTNumber)}
                 className={`${inputClass} tabular`}
               />
             </div>
