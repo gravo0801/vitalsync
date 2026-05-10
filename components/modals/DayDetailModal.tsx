@@ -155,10 +155,16 @@ export default function DayDetailModal({
                       </span>
                     )}
                   </div>
+                  {w.lessonContent && (
+                    <div className="text-xs mt-1 px-2 py-1.5 rounded-md bg-[var(--color-wine-500)]/8 border-l-2 border-[var(--color-wine-500)]/40">
+                      <span className="text-[10px] font-semibold text-[var(--color-wine-500)] mr-1">수업</span>
+                      <span className="text-[color:var(--foreground)] whitespace-pre-line">{w.lessonContent}</span>
+                    </div>
+                  )}
                   {w.notes && (
-                    <span className="text-xs text-[color:var(--muted-foreground)] mt-0.5 truncate">
+                    <div className="text-xs text-[color:var(--muted-foreground)] mt-1 whitespace-pre-line">
                       {w.notes}
-                    </span>
+                    </div>
                   )}
                 </div>
               </Row>

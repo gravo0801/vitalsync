@@ -32,27 +32,42 @@ export function useWorkouts() {
     return () => unsub();
   }, []);
 
-  // ⭐ PT 회차를 동적으로 계산 (저장 X)
-  // 날짜 + createdAt 순서로 PT만 추출 → 1, 2, 3... 부여
+  // ⭐ PT 회차 부여
+  // 1. 저장된 ptNumber가 있으면 그걸 사용 (수동 지정 우선)
+  // 2. 없는 PT는 날짜+createdAt 순서로 빈 회차 번호를 채움
   const workoutsWithPt = useMemo<WorkoutWithPtNumber[]>(() => {
-    const ptOrdered = [...workouts]
-      .filter((w) => w.category === "PT")
+    const ptList = workouts.filter((w) => w.category === "PT");
+    const usedNumbers = new Set<number>();
+    ptList.forEach((w) => {
+      if (typeof w.ptNumber === "number") usedNumbers.add(w.ptNumber);
+    });
+
+    const withoutStored = ptList
+      .filter((w) => typeof w.ptNumber !== "number")
       .sort((a, b) => {
-        // 1차: 날짜 오름차순
         const cmp = a.date.localeCompare(b.date);
         if (cmp !== 0) return cmp;
-        // 2차: createdAt 오름차순 (같은 날 여러 PT 시)
         const ta = a.createdAt?.toMillis?.() ?? 0;
         const tb = b.createdAt?.toMillis?.() ?? 0;
         return ta - tb;
       });
 
-    const ptNumberMap = new Map<string, number>();
-    ptOrdered.forEach((w, idx) => ptNumberMap.set(w.id, idx + 1));
+    const dynamicMap = new Map<string, number>();
+    let counter = 1;
+    for (const w of withoutStored) {
+      while (usedNumbers.has(counter)) counter++;
+      dynamicMap.set(w.id, counter);
+      counter++;
+    }
 
     return workouts.map((w) => ({
       ...w,
-      ptNumber: ptNumberMap.get(w.id),
+      ptNumber:
+        w.category === "PT"
+          ? typeof w.ptNumber === "number"
+            ? w.ptNumber
+            : dynamicMap.get(w.id)
+          : undefined,
     }));
   }, [workouts]);
 
@@ -61,6 +76,8 @@ export function useWorkouts() {
     duration: number;
     type?: string;
     category?: WorkoutCategory;
+    ptNumber?: number;
+    lessonContent?: string;
     caloriesBurned?: number;
     notes?: string;
   }) => {
@@ -70,6 +87,8 @@ export function useWorkouts() {
       duration: params.duration,
       type: params.type || "",
       category: params.category || "personal",
+      ptNumber: params.ptNumber ?? null,
+      lessonContent: params.lessonContent || "",
       caloriesBurned: params.caloriesBurned ?? null,
       notes: params.notes || "",
       createdAt: Timestamp.now(),

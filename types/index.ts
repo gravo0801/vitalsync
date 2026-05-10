@@ -49,6 +49,8 @@ export interface WorkoutRecord {
   duration: number;
   type?: string; // 걷기, 달리기, 헬스 등
   category?: WorkoutCategory; // ⭐ PT or 개인운동
+  ptNumber?: number; // ⭐ PT 회차를 수동 지정 시 저장 (없으면 자동 계산)
+  lessonContent?: string; // ⭐ 오늘 PT에서 무슨 수업/운동을 했는지
   caloriesBurned?: number;
   notes: string;
   createdAt: Timestamp;

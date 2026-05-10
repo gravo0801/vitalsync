@@ -17,6 +17,8 @@ interface Props {
     duration: number;
     type?: string;
     category?: WorkoutCategory;
+    ptNumber?: number;
+    lessonContent?: string;
     caloriesBurned?: number;
     notes?: string;
   }) => Promise<void>;
@@ -38,6 +40,8 @@ export default function WorkoutModal({
   const [category, setCategory] = useState<WorkoutCategory>("personal");
   const [type, setType] = useState("걷기");
   const [duration, setDuration] = useState("");
+  const [ptNumber, setPtNumber] = useState("");
+  const [lessonContent, setLessonContent] = useState("");
   const [calories, setCalories] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -48,10 +52,20 @@ export default function WorkoutModal({
       setCategory("personal");
       setType("걷기");
       setDuration("");
+      setPtNumber("");
+      setLessonContent("");
       setCalories("");
       setNotes("");
     }
   }, [open, defaultDate]);
+
+  // PT 모드 진입 시 회차 기본값을 다음 회차로
+  useEffect(() => {
+    if (category === "PT" && !ptNumber) {
+      setPtNumber(String(totalPTCount + 1));
+    }
+    if (category !== "PT") setPtNumber("");
+  }, [category, totalPTCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 카테고리 변경 시 type 기본값 변경
   useEffect(() => {
@@ -85,11 +99,19 @@ export default function WorkoutModal({
     }
     setSaving(true);
     try {
+      const ptN = category === "PT" && ptNumber ? parseInt(ptNumber) : undefined;
+      if (ptN !== undefined && (isNaN(ptN) || ptN <= 0)) {
+        toast.error("올바른 회차를 입력해주세요");
+        setSaving(false);
+        return;
+      }
       await onSave({
         date,
         duration: min,
         type,
         category,
+        ptNumber: ptN,
+        lessonContent: category === "PT" ? lessonContent : undefined,
         caloriesBurned: calories ? parseInt(calories) : undefined,
         notes,
       });
@@ -104,7 +126,6 @@ export default function WorkoutModal({
   };
 
   const TYPES = category === "PT" ? PT_TYPES : PERSONAL_TYPES;
-  const nextPTNumber = totalPTCount + 1;
 
   return (
     <Modal
@@ -133,19 +154,35 @@ export default function WorkoutModal({
               color="wine"
               icon={<Dumbbell size={16} />}
               title="PT"
-              subtitle={category === "PT" ? `${nextPTNumber}회차` : "퍼스널 트레이닝"}
+              subtitle="퍼스널 트레이닝"
             />
           </div>
         </div>
 
-        <div>
-          <label className={labelClass}>날짜</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className={inputClass}
-          />
+        <div className={category === "PT" ? "grid grid-cols-2 gap-2" : ""}>
+          <div>
+            <label className={labelClass}>날짜</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          {category === "PT" && (
+            <div>
+              <label className={labelClass}>회차</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={ptNumber}
+                onChange={(e) => setPtNumber(e.target.value)}
+                placeholder={String(totalPTCount + 1)}
+                className={`${inputClass} tabular`}
+              />
+            </div>
+          )}
         </div>
 
         <div>
@@ -202,17 +239,32 @@ export default function WorkoutModal({
           />
         </div>
 
+        {category === "PT" && (
+          <div>
+            <label className={labelClass}>오늘 수업 내용 (선택)</label>
+            <textarea
+              value={lessonContent}
+              onChange={(e) => setLessonContent(e.target.value)}
+              placeholder="예) 하체 위주 — 스쿼트 5x10, 데드리프트 4x6, 레그프레스 3x12"
+              rows={3}
+              className={`${inputClass} resize-none`}
+            />
+          </div>
+        )}
+
         <div>
-          <label className={labelClass}>메모 (선택)</label>
+          <label className={labelClass}>
+            {category === "PT" ? "느낀 점 / 일기 (선택)" : "메모 (선택)"}
+          </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder={
               category === "PT"
-                ? "트레이너, 강도, 부위 등"
+                ? "오늘 강도는 어땠는지, 컨디션, 트레이너 코멘트, 다음 목표 등 자유롭게"
                 : "장소, 강도 등"
             }
-            rows={2}
+            rows={category === "PT" ? 5 : 2}
             className={`${inputClass} resize-none`}
           />
         </div>
