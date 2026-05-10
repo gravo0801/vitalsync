@@ -19,9 +19,17 @@ export function useMedications() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as MedicationRecord));
-        docs.sort((a, b) => a.date.localeCompare(b.date));
-        setMedications(docs);
+        const docs = snap.docs.map((d) => {
+          const data = d.data() as Record<string, unknown>;
+          // 레거시 호환: 옛 스키마는 injectionDate 필드 사용
+          const date = (data.date as string) || (data.injectionDate as string) || "";
+          const doseMg = (data.doseMg as MedicationRecord["doseMg"]) ?? 2.5;
+          return { ...(data as object), id: d.id, date, doseMg } as MedicationRecord;
+        });
+        // 날짜가 비어있는(레거시 손상) 문서는 제외
+        const valid = docs.filter((d) => !!d.date);
+        valid.sort((a, b) => a.date.localeCompare(b.date));
+        setMedications(valid);
         setLoading(false);
       },
       (err) => {
