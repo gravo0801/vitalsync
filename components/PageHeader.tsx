@@ -5,12 +5,13 @@ interface Props {
   onAddWeight: () => void;
   onAddMeal: () => void;
   onAddWorkout: () => void;
+  onAddMedication?: () => void;
   greeting?: string;
   name?: string;
 }
 
 export default function PageHeader({
-  onAddWeight, onAddMeal, onAddWorkout, greeting, name,
+  onAddWeight, onAddMeal, onAddWorkout, onAddMedication, greeting, name,
 }: Props) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
@@ -27,6 +28,9 @@ export default function PageHeader({
         <ActionButton onClick={onAddWeight} color="sage">체중</ActionButton>
         <ActionButton onClick={onAddMeal} color="terra">식사</ActionButton>
         <ActionButton onClick={onAddWorkout} color="slate-blue">운동</ActionButton>
+        {onAddMedication && (
+          <ActionButton onClick={onAddMedication} color="wine">주사</ActionButton>
+        )}
       </div>
     </div>
   );

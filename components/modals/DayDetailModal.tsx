@@ -1,10 +1,16 @@
 "use client";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Trash2, Plus, Dumbbell, User } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "./Modal";
-import type { WeightRecord, MealRecord, WorkoutWithPtNumber } from "@/types";
+import type { WeightRecord, MealRecord, WorkoutWithPtNumber, MedicationRecord } from "@/types";
+
+const SITE_LABEL: Record<string, string> = {
+  abdomen: "복부",
+  thigh: "허벅지",
+  upper_arm: "상완",
+};
 
 interface Props {
   open: boolean;
@@ -13,24 +19,28 @@ interface Props {
   weights: WeightRecord[];
   meals: MealRecord[];
   workouts: WorkoutWithPtNumber[];
+  medications?: MedicationRecord[];
   onAddWeight: () => void;
   onAddMeal: () => void;
   onAddWorkout: () => void;
+  onAddMedication?: () => void;
   onDeleteWeight: (id: string) => Promise<void>;
   onDeleteMeal: (meal: MealRecord) => Promise<void>;
   onDeleteWorkout: (id: string) => Promise<void>;
+  onDeleteMedication?: (id: string) => Promise<void>;
 }
 
 export default function DayDetailModal({
-  open, onClose, date, weights, meals, workouts,
-  onAddWeight, onAddMeal, onAddWorkout,
-  onDeleteWeight, onDeleteMeal, onDeleteWorkout,
+  open, onClose, date, weights, meals, workouts, medications = [],
+  onAddWeight, onAddMeal, onAddWorkout, onAddMedication,
+  onDeleteWeight, onDeleteMeal, onDeleteWorkout, onDeleteMedication,
 }: Props) {
   if (!date) return null;
 
   const dayWeights = weights.filter((w) => w.date === date);
   const dayMeals = meals.filter((m) => m.date === date);
   const dayWorkouts = workouts.filter((w) => w.date === date);
+  const dayMedications = medications.filter((m) => m.date === date);
 
   const totalKcalIn = dayMeals.reduce((s, m) => s + (m.calories || 0), 0);
   const totalKcalOut = dayWorkouts.reduce((s, w) => s + (w.caloriesBurned || 0), 0);
@@ -49,8 +59,8 @@ export default function DayDetailModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={format(new Date(date), "yyyy년 MM월 dd일", { locale: ko })}
-      subtitle={format(new Date(date), "EEEE", { locale: ko })}
+      title={format(parseISO(date), "yyyy년 MM월 dd일", { locale: ko })}
+      subtitle={format(parseISO(date), "EEEE", { locale: ko })}
     >
       <div className="space-y-5">
         {/* 일일 칼로리 요약 */}
@@ -155,6 +165,51 @@ export default function DayDetailModal({
             ))
           )}
         </Section>
+
+        {onAddMedication && (
+          <Section title="Mounjaro" onAdd={onAddMedication}>
+            {dayMedications.length === 0 ? (
+              <Empty />
+            ) : (
+              dayMedications.map((m) => (
+                <Row
+                  key={m.id}
+                  onDelete={() =>
+                    onDeleteMedication
+                      ? handleDelete(() => onDeleteMedication(m.id))
+                      : Promise.resolve()
+                  }
+                >
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center text-[10px] font-semibold bg-[var(--color-mauve-500)] text-white px-1.5 py-0.5 rounded">
+                        Mounjaro
+                      </span>
+                      <span className="text-sm font-semibold tabular text-[var(--color-mauve-500)]">
+                        {m.doseMg} <span className="text-xs font-normal text-[color:var(--muted)]">mg</span>
+                      </span>
+                      {m.injectionSite && (
+                        <span className="text-xs text-[color:var(--muted)]">
+                          {SITE_LABEL[m.injectionSite]}
+                        </span>
+                      )}
+                      {m.weightKgAtInjection != null && (
+                        <span className="text-xs tabular text-[var(--color-sage-600)] dark:text-[var(--color-sage-400)]">
+                          {m.weightKgAtInjection} kg
+                        </span>
+                      )}
+                    </div>
+                    {m.sideEffects && (
+                      <span className="text-xs text-[color:var(--muted-foreground)] mt-0.5 truncate">
+                        {m.sideEffects}
+                      </span>
+                    )}
+                  </div>
+                </Row>
+              ))
+            )}
+          </Section>
+        )}
       </div>
 
       <button

@@ -45,11 +45,12 @@ export function useMeals() {
     content?: string;
     photo?: File | null;
   }) => {
-    let photoURL: string | undefined;
+    let photoURL: string | null = null;
     if (params.photo) {
+      const safeName = params.photo.name.replace(/[^\w.\-]/g, "_");
       const storageRef = ref(
         storage,
-        `meals/${PERSONAL_USER_ID}/${Date.now()}_${params.photo.name}`
+        `meals/${PERSONAL_USER_ID}/${Date.now()}_${safeName}`
       );
       await uploadBytes(storageRef, params.photo);
       photoURL = await getDownloadURL(storageRef);

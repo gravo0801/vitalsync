@@ -31,5 +31,12 @@ service cloud.firestore {
       allow create: if request.resource.data.userId == "personal-user";
       allow update, delete: if resource.data.userId == "personal-user";
     }
+
+    // ⭐ Mounjaro (GLP-1) 주간 주사 기록
+    match /medications/{docId} {
+      allow read: if resource.data.userId == "personal-user";
+      allow create: if request.resource.data.userId == "personal-user";
+      allow update, delete: if resource.data.userId == "personal-user";
+    }
   }
 }

@@ -15,7 +15,10 @@ export function useProfile() {
         setProfile(snap.exists() ? (snap.data() as UserProfile) : null);
         setLoading(false);
       },
-      () => setLoading(false)
+      (err) => {
+        console.error("[useProfile] onSnapshot error:", err);
+        setLoading(false);
+      }
     );
     return () => unsub();
   }, []);

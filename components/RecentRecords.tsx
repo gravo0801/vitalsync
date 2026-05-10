@@ -1,6 +1,6 @@
 "use client";
 import { Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { toast } from "sonner";
 import type { WeightRecord, MealRecord } from "@/types";
@@ -53,7 +53,7 @@ export default function RecentRecords({
               >
                 <div className="flex flex-col">
                   <span className="text-sm">
-                    {format(new Date(w.date), "yyyy.MM.dd (E)", { locale: ko })}
+                    {format(parseISO(w.date), "yyyy.MM.dd (E)", { locale: ko })}
                   </span>
                   {w.memo && (
                     <span className="text-xs text-[color:var(--muted)] mt-0.5">{w.memo}</span>
@@ -87,7 +87,7 @@ export default function RecentRecords({
                   <div className="flex items-center gap-2 text-sm">
                     <span className="font-medium">{meal.mealType}</span>
                     <span className="text-xs text-[color:var(--muted)]">
-                      {format(new Date(meal.date), "MM.dd", { locale: ko })}
+                      {format(parseISO(meal.date), "MM.dd", { locale: ko })}
                     </span>
                   </div>
                   {meal.content && (

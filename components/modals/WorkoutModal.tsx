@@ -11,6 +11,7 @@ interface Props {
   onClose: () => void;
   defaultDate?: string;
   totalPTCount: number; // 현재까지 PT 누적 횟수 (다음 PT 회차 미리보기용)
+  bodyWeightKg?: number;
   onSave: (params: {
     date: string;
     duration: number;
@@ -31,7 +32,7 @@ const MET: Record<string, number> = {
 };
 
 export default function WorkoutModal({
-  open, onClose, defaultDate, totalPTCount, onSave,
+  open, onClose, defaultDate, totalPTCount, bodyWeightKg, onSave,
 }: Props) {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [category, setCategory] = useState<WorkoutCategory>("personal");
@@ -65,7 +66,8 @@ export default function WorkoutModal({
       const min = parseInt(duration);
       if (!isNaN(min) && min > 0) {
         const met = MET[type] ?? 4;
-        const kcal = Math.round((met * 98 * min) / 60);
+        const w = bodyWeightKg && bodyWeightKg > 0 ? bodyWeightKg : 70;
+        const kcal = Math.round((met * w * min) / 60);
         setCalories(kcal.toString());
       }
     }
@@ -93,7 +95,8 @@ export default function WorkoutModal({
       });
       toast.success("저장되었습니다");
       onClose();
-    } catch {
+    } catch (e) {
+      console.error("[WorkoutModal] save failed:", e);
       toast.error("저장에 실패했습니다");
     } finally {
       setSaving(false);

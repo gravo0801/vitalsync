@@ -6,17 +6,18 @@ import {
   getDay, addMonths, subMonths, isToday,
 } from "date-fns";
 import { ko } from "date-fns/locale";
-import type { WeightRecord, MealRecord, WorkoutWithPtNumber } from "@/types";
+import type { WeightRecord, MealRecord, WorkoutWithPtNumber, MedicationRecord } from "@/types";
 import { Card } from "./SummaryCards";
 
 interface Props {
   weights: WeightRecord[];
   meals: MealRecord[];
   workouts: WorkoutWithPtNumber[];
+  medications?: MedicationRecord[];
   onSelectDate: (date: string) => void;
 }
 
-export default function Calendar({ weights, meals, workouts, onSelectDate }: Props) {
+export default function Calendar({ weights, meals, workouts, medications = [], onSelectDate }: Props) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -32,6 +33,7 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
       hasPT: !!ptWorkout,
       hasPersonal: !!personalWorkout,
       ptNumber: ptWorkout?.ptNumber,
+      hasMedication: medications.some((m) => m.date === dateStr),
     };
   };
 
@@ -65,6 +67,7 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
         <LegendItem color="var(--color-terra-500)" label="식사" />
         <LegendItem color="var(--color-sage-500)" label="개인 운동" />
         <LegendItem color="var(--color-wine-500)" label="PT" />
+        <LegendItem color="var(--color-mauve-500)" label="Mounjaro" />
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center">
@@ -126,6 +129,9 @@ export default function Calendar({ weights, meals, workouts, onSelectDate }: Pro
                 )}
                 {status.hasPT && (
                   <div className="w-1 h-1 rounded-full bg-[var(--color-wine-500)]" />
+                )}
+                {status.hasMedication && (
+                  <div className="w-1 h-1 rounded-full bg-[var(--color-mauve-500)]" />
                 )}
               </div>
             </button>

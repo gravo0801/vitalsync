@@ -39,7 +39,7 @@ export interface MealRecord {
   mealType: MealType;
   calories: number | null;
   content?: string;
-  photoURL?: string;
+  photoURL?: string | null;
   createdAt: Timestamp;
 }
 
@@ -99,4 +99,20 @@ export interface CombinedWeightPoint {
 // 운동에 동적 PT 회차 부여
 export interface WorkoutWithPtNumber extends WorkoutRecord {
   ptNumber?: number;
+}
+
+// ⭐ Mounjaro (티르제파티드) 주간 주사 기록
+export type InjectionSite = "abdomen" | "thigh" | "upper_arm";
+export const MOUNJARO_DOSES = [2.5, 5, 7.5, 10, 12.5, 15] as const;
+export type MounjaroDose = (typeof MOUNJARO_DOSES)[number];
+
+export interface MedicationRecord {
+  id: string;
+  date: string; // YYYY-MM-DD (주사일)
+  medicationType: "mounjaro";
+  doseMg: MounjaroDose;
+  injectionSite?: InjectionSite | null;
+  sideEffects?: string;
+  weightKgAtInjection?: number | null;
+  createdAt: Timestamp;
 }

@@ -9,6 +9,7 @@ import { useWeights } from "@/hooks/useWeights";
 import { useMeals } from "@/hooks/useMeals";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import { useInbody } from "@/hooks/useInbody";
+import { useMedications } from "@/hooks/useMedications";
 
 import Sidebar from "@/components/Sidebar";
 import PageHeader from "@/components/PageHeader";
@@ -20,6 +21,7 @@ import Calendar from "@/components/Calendar";
 import WeightModal from "@/components/modals/WeightModal";
 import MealModal from "@/components/modals/MealModal";
 import WorkoutModal from "@/components/modals/WorkoutModal";
+import MedicationModal from "@/components/modals/MedicationModal";
 import DayDetailModal from "@/components/modals/DayDetailModal";
 
 export default function Dashboard() {
@@ -28,14 +30,22 @@ export default function Dashboard() {
   const { meals, loading: mLoading, addMeal, deleteMeal } = useMeals();
   const { workouts, loading: woLoading, totalPTCount, addWorkout, deleteWorkout } = useWorkouts();
   const { records: inbodyRecords, loading: ibLoading } = useInbody();
+  const {
+    medications,
+    loading: medLoading,
+    lastMedication,
+    addMedication,
+    deleteMedication,
+  } = useMedications();
 
   const [weightOpen, setWeightOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
   const [workoutOpen, setWorkoutOpen] = useState(false);
+  const [medicationOpen, setMedicationOpen] = useState(false);
   const [dayOpen, setDayOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const loading = pLoading || wLoading || mLoading || woLoading || ibLoading;
+  const loading = pLoading || wLoading || mLoading || woLoading || ibLoading || medLoading;
 
   // ⭐ 현재 체중 - 체중기록 + 인바디 통합해서 가장 최근 측정값
   const { currentWeight, currentWeightDate, currentWeightSource } = useMemo(() => {
@@ -124,6 +134,10 @@ export default function Dashboard() {
             onAddWeight={() => setWeightOpen(true)}
             onAddMeal={() => setMealOpen(true)}
             onAddWorkout={() => setWorkoutOpen(true)}
+            onAddMedication={() => {
+              setSelectedDate(null);
+              setMedicationOpen(true);
+            }}
           />
 
           <SummaryCards
@@ -133,6 +147,11 @@ export default function Dashboard() {
             currentWeightSource={currentWeightSource}
             todayKcalIn={todayKcalIn}
             todayKcalBurned={todayKcalBurned}
+            medications={medications}
+            onAddMedication={() => {
+              setSelectedDate(null);
+              setMedicationOpen(true);
+            }}
           />
 
           <WeightChart
@@ -152,6 +171,7 @@ export default function Dashboard() {
             weights={weights}
             meals={meals}
             workouts={workouts}
+            medications={medications}
             onSelectDate={(d) => {
               setSelectedDate(d);
               setDayOpen(true);
@@ -177,7 +197,16 @@ export default function Dashboard() {
         onClose={() => setWorkoutOpen(false)}
         defaultDate={selectedDate || undefined}
         totalPTCount={totalPTCount}
+        bodyWeightKg={currentWeight}
         onSave={addWorkout}
+      />
+      <MedicationModal
+        open={medicationOpen}
+        onClose={() => setMedicationOpen(false)}
+        defaultDate={selectedDate || undefined}
+        defaultDose={lastMedication?.doseMg}
+        bodyWeightKg={currentWeight}
+        onSave={addMedication}
       />
       <DayDetailModal
         open={dayOpen}
@@ -186,12 +215,15 @@ export default function Dashboard() {
         weights={weights}
         meals={meals}
         workouts={workouts}
+        medications={medications}
         onAddWeight={() => { setDayOpen(false); setWeightOpen(true); }}
         onAddMeal={() => { setDayOpen(false); setMealOpen(true); }}
         onAddWorkout={() => { setDayOpen(false); setWorkoutOpen(true); }}
+        onAddMedication={() => { setDayOpen(false); setMedicationOpen(true); }}
         onDeleteWeight={deleteWeight}
         onDeleteMeal={deleteMeal}
         onDeleteWorkout={deleteWorkout}
+        onDeleteMedication={deleteMedication}
       />
     </div>
   );

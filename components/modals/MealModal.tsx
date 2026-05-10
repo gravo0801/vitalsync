@@ -55,7 +55,8 @@ export default function MealModal({ open, onClose, defaultDate, onSave }: Props)
       });
       toast.success("저장되었습니다");
       onClose();
-    } catch {
+    } catch (e) {
+      console.error("[MealModal] save failed:", e);
       toast.error("저장에 실패했습니다");
     } finally {
       setSaving(false);

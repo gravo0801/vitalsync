@@ -40,7 +40,8 @@ export default function WeightModal({ open, onClose, defaultDate, onSave }: Prop
       await onSave(date, w, memo);
       toast.success("저장되었습니다");
       onClose();
-    } catch {
+    } catch (e) {
+      console.error("[WeightModal] save failed:", e);
       toast.error("저장에 실패했습니다");
     } finally {
       setSaving(false);
