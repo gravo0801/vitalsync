@@ -8,7 +8,7 @@ import {
 import type { UserProfile, MedicationRecord } from "@/types";
 import {
   format, differenceInDays, parseISO,
-  startOfWeek, endOfWeek, isWithinInterval, addDays, differenceInCalendarDays,
+  addDays, differenceInCalendarDays,
 } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -38,23 +38,54 @@ function relativeDate(dateStr?: string): string {
   return format(d, "MM.dd", { locale: ko });
 }
 
+function formatDose(doseMg: number): string {
+  return Number.isInteger(doseMg) ? `${doseMg}` : `${doseMg}`;
+}
+
+function getDoseCourseNumber(records: MedicationRecord[], target: MedicationRecord): number {
+  const ordered = [...records]
+    .filter((m) => m.date <= target.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  let count = 0;
+  let previousDose: number | null = null;
+  for (const record of ordered) {
+    if (record.doseMg !== previousDose) {
+      count = 1;
+      previousDose = record.doseMg;
+    } else {
+      count += 1;
+    }
+    if (record.id === target.id) return count;
+  }
+  return 1;
+}
+
 export default function SummaryCards({
   profile, currentWeight, currentWeightDate, currentWeightSource,
   todayKcalIn, todayKcalBurned, medications = [], onAddMedication,
 }: Props) {
-  // ⭐ 주간 Mounjaro 상태 계산
+  // ⭐ Mounjaro 상태 계산
+  // 일요일에 주사 기록을 남기는 사용 패턴에 맞춰, 주사일 포함 7일간 유효 기록으로 본다.
   const now = new Date();
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-  const thisWeekShot = medications.find((m) => {
-    try {
-      return isWithinInterval(parseISO(m.date), { start: weekStart, end: weekEnd });
-    } catch {
-      return false;
-    }
+  const validMedications = medications
+    .filter((m) => {
+      try {
+        return differenceInCalendarDays(now, parseISO(m.date)) >= 0;
+      } catch {
+        return false;
+      }
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const activeShot = validMedications.find((m) => {
+    const ageDays = differenceInCalendarDays(now, parseISO(m.date));
+    return ageDays >= 0 && ageDays < 7;
   });
-  const lastShot = medications.length > 0
-    ? [...medications].sort((a, b) => b.date.localeCompare(a.date))[0]
+  const doseCourseNumber = activeShot
+    ? getDoseCourseNumber(medications, activeShot)
+    : null;
+  const lastShot = validMedications.length > 0
+    ? validMedications[0]
     : undefined;
   const nextDueDate = lastShot ? addDays(parseISO(lastShot.date), 7) : null;
   const dDay = nextDueDate ? differenceInCalendarDays(nextDueDate, now) : null;
@@ -162,25 +193,30 @@ export default function SummaryCards({
       {showMedicationCard && (
         <Card accentColor="mauve">
           <CardLabel>이번 주 <span className="serif-italic">Mounjaro</span></CardLabel>
-          {thisWeekShot ? (
+          {activeShot ? (
             <>
               <div className="flex items-baseline gap-2 mt-3">
                 <span className="text-3xl font-semibold tabular tracking-tight text-[var(--color-mauve-500)]">
-                  {thisWeekShot.doseMg}
+                  {formatDose(activeShot.doseMg)}
                 </span>
                 <span className="text-sm text-[color:var(--muted)]">mg</span>
+                {doseCourseNumber != null && (
+                  <span className="text-xs font-semibold text-[var(--color-mauve-500)]">
+                    {doseCourseNumber}회차
+                  </span>
+                )}
               </div>
               <div className="text-xs text-[color:var(--muted)] mt-2 tabular">
-                {format(parseISO(thisWeekShot.date), "M.d (E)", { locale: ko })} 기록됨
+                {format(parseISO(activeShot.date), "M.d (E)", { locale: ko })} 주사 · 이번 주 유효
               </div>
               {dDay != null && (
                 <div className="text-[11px] text-[var(--color-mauve-500)] mt-1 tabular">
                   다음 예정 {format(nextDueDate!, "M.d (E)", { locale: ko })} · {dueLabel}
                 </div>
               )}
-              {(thisWeekShot.appetiteSuppression != null || thisWeekShot.nauseaLevel != null) && (
+              {(activeShot.appetiteSuppression != null || activeShot.nauseaLevel != null) && (
                 <div className="text-[11px] text-[color:var(--muted)] mt-1 tabular">
-                  식욕 {thisWeekShot.appetiteSuppression ?? "—"}/10 · 오심 {thisWeekShot.nauseaLevel ?? "—"}/10
+                  식욕 {activeShot.appetiteSuppression ?? "—"}/10 · 오심 {activeShot.nauseaLevel ?? "—"}/10
                 </div>
               )}
             </>
