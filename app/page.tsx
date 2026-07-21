@@ -14,6 +14,7 @@ import { useMedications } from "@/hooks/useMedications";
 import Sidebar from "@/components/Sidebar";
 import PageHeader from "@/components/PageHeader";
 import SummaryCards from "@/components/SummaryCards";
+import WorkoutDashboard from "@/components/WorkoutDashboard";
 import WeightChart from "@/components/WeightChart";
 import RecentRecords from "@/components/RecentRecords";
 import Calendar from "@/components/Calendar";
@@ -151,6 +152,18 @@ export default function Dashboard() {
             onAddMedication={() => {
               setSelectedDate(null);
               setMedicationOpen(true);
+            }}
+          />
+
+          <WorkoutDashboard
+            workouts={workouts}
+            onAddWorkout={() => {
+              setSelectedDate(null);
+              setWorkoutOpen(true);
+            }}
+            onSelectDate={(date) => {
+              setSelectedDate(date);
+              setDayOpen(true);
             }}
           />
 
