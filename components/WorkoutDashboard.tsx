@@ -39,6 +39,7 @@ import {
 import type { WorkoutWithPtNumber } from "@/types";
 import {
   calculateWorkoutVolume,
+  summarizeCardio,
   summarizeSets,
   totalWorkoutSets,
 } from "@/lib/workoutCalculations";
@@ -375,6 +376,7 @@ function RecentWorkout({
   const parsedDate = safeDate(workout.date);
   const detail = workout.lessonContent?.trim() || workout.notes?.trim();
   const exercises = workout.exercises ?? [];
+  const cardioExercises = workout.cardioExercises ?? [];
 
   return (
     <button
@@ -407,13 +409,15 @@ function RecentWorkout({
               </div>
               <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-[color:var(--muted)] tabular">
                 <span>{parsedDate ? format(parsedDate, "M.d (E)", { locale: ko }) : workout.date}</span>
-                <span>{Number(workout.duration) || 0}분</span>
+                <span>
+                  {Number(workout.duration) || 0}분{workout.durationDerivedFromCardio ? "(유산소 기록)" : ""}
+                </span>
                 {workout.caloriesBurned != null && <span>{workout.caloriesBurned} kcal</span>}
               </div>
             </div>
             <ArrowRight size={14} className="mt-1 shrink-0 text-[color:var(--muted)] transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </div>
-          {exercises.length > 0 && (
+          {(exercises.length > 0 || cardioExercises.length > 0) && (
             <div className="mt-2 space-y-1.5 rounded-lg bg-white/70 px-2.5 py-2 dark:bg-black/10">
               {exercises.slice(0, featured ? 3 : 2).map((exercise) => (
                 <div key={exercise.id} className="text-[10px] leading-relaxed">
@@ -426,9 +430,17 @@ function RecentWorkout({
               {exercises.length > (featured ? 3 : 2) && (
                 <div className="text-[9px] text-[color:var(--muted)]">외 {exercises.length - (featured ? 3 : 2)}종목</div>
               )}
+              {cardioExercises.slice(0, 1).map((exercise) => (
+                <div key={exercise.id} className="border-t border-black/5 pt-1.5 text-[10px] leading-relaxed dark:border-white/5">
+                  <span className="font-semibold text-[color:var(--foreground)]">{exercise.name}</span>
+                  <span className="ml-1 text-[color:var(--muted-foreground)] tabular">
+                    {summarizeCardio(exercise)}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
-          {detail && exercises.length === 0 && (
+          {detail && exercises.length === 0 && cardioExercises.length === 0 && (
             <p className={`mt-2 whitespace-pre-line text-[11px] leading-relaxed text-[color:var(--muted-foreground)] ${featured ? "line-clamp-3" : "line-clamp-1"}`}>
               {detail}
             </p>
