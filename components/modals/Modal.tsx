@@ -9,9 +9,18 @@ interface Props {
   subtitle?: string;
   children: React.ReactNode;
   zIndex?: number;
+  maxWidth?: "md" | "lg";
 }
 
-export default function Modal({ open, onClose, title, subtitle, children, zIndex = 50 }: Props) {
+export default function Modal({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  zIndex = 50,
+  maxWidth = "md",
+}: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -34,12 +43,12 @@ export default function Modal({ open, onClose, title, subtitle, children, zIndex
       onClick={onClose}
     >
       <div
-        className="
-          rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md
+        className={`
+          rounded-t-3xl sm:rounded-2xl w-full ${maxWidth === "lg" ? "sm:max-w-2xl" : "sm:max-w-md"}
           bg-white dark:bg-[var(--color-ink-900)]
           border border-black/5 dark:border-white/8
           shadow-xl max-h-[90vh] overflow-y-auto
-        "
+        `}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-[var(--color-ink-900)] border-b border-black/5 dark:border-white/5 px-6 py-4 flex items-start justify-between">
