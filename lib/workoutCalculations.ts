@@ -1,5 +1,6 @@
 import type {
   StrengthSet,
+  WorkoutCardioExercise,
   WorkoutExercise,
   WorkoutIntensity,
 } from "@/types";
@@ -27,10 +28,10 @@ const GENERAL_MET: Record<string, number> = {
   기타: 4.0,
 };
 
-const STRENGTH_TYPES = new Set(["헬스", "홈트", "근력", "복합"]);
+const STRENGTH_TYPES = ["헬스", "홈트", "근력", "복합"];
 
 export function isStrengthWorkout(type: string): boolean {
-  return STRENGTH_TYPES.has(type);
+  return STRENGTH_TYPES.some((keyword) => type.includes(keyword));
 }
 
 export function workoutMet(type: string, intensity: WorkoutIntensity): number {
@@ -55,7 +56,10 @@ export function estimateWorkoutCalories({
 }
 
 export function calculateSetVolume(set: StrengthSet): number {
-  return (set.weightKg ?? 0) * set.reps;
+  const load =
+    set.weightKg ??
+    ((set.machineBaseWeightKg ?? 0) + (set.addedWeightKg ?? 0) || 0);
+  return load * (set.reps ?? 0);
 }
 
 export function calculateExerciseVolume(exercise: WorkoutExercise): number {
@@ -72,25 +76,59 @@ export function totalWorkoutSets(exercises: WorkoutExercise[] = []): number {
 
 export function totalWorkoutReps(exercises: WorkoutExercise[] = []): number {
   return exercises.reduce(
-    (sum, exercise) => sum + exercise.sets.reduce((setSum, set) => setSum + set.reps, 0),
+    (sum, exercise) => sum + exercise.sets.reduce((setSum, set) => setSum + (set.reps ?? 0), 0),
     0,
   );
 }
 
+export function setLoadLabel(set: StrengthSet): string {
+  if (set.weightKg != null) {
+    return `${set.weightKg}kg${set.estimated ? "(추정)" : ""}`;
+  }
+
+  const parts: string[] = [];
+  if (set.machineBaseWeightKg != null) {
+    parts.push(`기본 ${set.machineBaseWeightKg}kg${set.machineBaseWeightEstimated ? "(추정)" : ""}`);
+  }
+  if (set.addedWeightKg != null) parts.push(`원판 ${set.addedWeightKg}kg`);
+  return parts.length > 0 ? parts.join(" + ") : "체중";
+}
+
+export function setRepsLabel(set: StrengthSet): string {
+  return set.reps == null ? "횟수 미기록" : `${set.reps}회`;
+}
+
+export function formatStrengthSet(set: StrengthSet): string {
+  return `${setLoadLabel(set)} × ${setRepsLabel(set)}`;
+}
+
 export function summarizeSets(sets: StrengthSet[]): string {
-  const grouped = new Map<string, { weightKg: number | null; reps: number; count: number }>();
+  const grouped = new Map<string, { set: StrengthSet; count: number }>();
 
   sets.forEach((set) => {
-    const key = `${set.weightKg ?? "bodyweight"}:${set.reps}`;
+    const key = [
+      set.weightKg ?? "bodyweight",
+      set.machineBaseWeightKg ?? "no-base",
+      set.addedWeightKg ?? "no-added",
+      set.machineBaseWeightEstimated ? "estimated-base" : "exact-base",
+      set.estimated ? "estimated" : "exact",
+      set.reps ?? "unknown-reps",
+    ].join(":");
     const current = grouped.get(key);
     if (current) current.count += 1;
-    else grouped.set(key, { ...set, count: 1 });
+    else grouped.set(key, { set, count: 1 });
   });
 
   return [...grouped.values()]
-    .map(({ weightKg, reps, count }) => {
-      const load = weightKg == null ? "체중" : `${weightKg}kg`;
-      return `${load} × ${reps}회 × ${count}세트`;
-    })
+    .map(({ set, count }) => `${formatStrengthSet(set)} × ${count}세트`)
     .join(" / ");
+}
+
+export function summarizeCardio(exercise: WorkoutCardioExercise): string {
+  const details: string[] = [];
+  if (exercise.durationMin != null) details.push(`${exercise.durationMin}분`);
+  if (exercise.speedKmh != null) details.push(`${exercise.speedKmh}km/h`);
+  if (exercise.distanceKm != null) details.push(`${exercise.distanceKm}km`);
+  if (exercise.inclinePercent != null) details.push(`경사 ${exercise.inclinePercent}%`);
+  return details.length > 0 ? details.join(" · ") : "상세 미기록";
 }
