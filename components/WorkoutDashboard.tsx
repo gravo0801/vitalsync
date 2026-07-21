@@ -37,6 +37,11 @@ import {
 } from "recharts";
 
 import type { WorkoutWithPtNumber } from "@/types";
+import {
+  calculateWorkoutVolume,
+  summarizeSets,
+  totalWorkoutSets,
+} from "@/lib/workoutCalculations";
 import { Card } from "./SummaryCards";
 
 interface Props {
@@ -165,6 +170,9 @@ export default function WorkoutDashboard({ workouts, onAddWorkout, onSelectDate 
 
   const weekMinutes = totalMinutes(stats.currentWeekRecords);
   const monthMinutes = totalMinutes(stats.monthRecords);
+  const monthExercises = stats.monthRecords.flatMap((workout) => workout.exercises ?? []);
+  const monthVolume = calculateWorkoutVolume(monthExercises);
+  const monthStrengthSets = totalWorkoutSets(monthExercises);
   const weekSessionDelta = stats.currentWeekRecords.length - stats.previousWeekRecords.length;
   const monthCalories = stats.monthRecords.reduce(
     (sum, workout) => sum + (Number(workout.caloriesBurned) || 0),
@@ -216,10 +224,10 @@ export default function WorkoutDashboard({ workouts, onAddWorkout, onSelectDate 
           />
           <Metric
             icon={<CalendarDays size={15} />}
-            label="이번 달 운동"
-            value={`${stats.monthRecords.length}`}
-            unit="회"
-            helper={`총 ${monthMinutes.toLocaleString()}분`}
+            label="이번 달 근력볼륨"
+            value={Math.round(monthVolume).toLocaleString()}
+            unit="kg"
+            helper={monthStrengthSets > 0 ? `${monthStrengthSets}세트 누적` : `${stats.monthRecords.length}회 · ${monthMinutes}분`}
           />
           <Metric
             icon={<Flame size={15} />}
@@ -366,6 +374,7 @@ function RecentWorkout({
 }) {
   const parsedDate = safeDate(workout.date);
   const detail = workout.lessonContent?.trim() || workout.notes?.trim();
+  const exercises = workout.exercises ?? [];
 
   return (
     <button
@@ -404,7 +413,22 @@ function RecentWorkout({
             </div>
             <ArrowRight size={14} className="mt-1 shrink-0 text-[color:var(--muted)] transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </div>
-          {detail && (
+          {exercises.length > 0 && (
+            <div className="mt-2 space-y-1.5 rounded-lg bg-white/70 px-2.5 py-2 dark:bg-black/10">
+              {exercises.slice(0, featured ? 3 : 2).map((exercise) => (
+                <div key={exercise.id} className="text-[10px] leading-relaxed">
+                  <span className="font-semibold text-[color:var(--foreground)]">{exercise.name}</span>
+                  <span className="ml-1 text-[color:var(--muted-foreground)] tabular">
+                    {summarizeSets(exercise.sets)}
+                  </span>
+                </div>
+              ))}
+              {exercises.length > (featured ? 3 : 2) && (
+                <div className="text-[9px] text-[color:var(--muted)]">외 {exercises.length - (featured ? 3 : 2)}종목</div>
+              )}
+            </div>
+          )}
+          {detail && exercises.length === 0 && (
             <p className={`mt-2 whitespace-pre-line text-[11px] leading-relaxed text-[color:var(--muted-foreground)] ${featured ? "line-clamp-3" : "line-clamp-1"}`}>
               {detail}
             </p>
