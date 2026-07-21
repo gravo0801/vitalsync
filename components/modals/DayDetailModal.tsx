@@ -4,7 +4,18 @@ import { ko } from "date-fns/locale";
 import { Trash2, Plus, Dumbbell, User } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "./Modal";
-import type { WeightRecord, MealRecord, WorkoutWithPtNumber, MedicationRecord } from "@/types";
+import type {
+  MedicationRecord,
+  MealRecord,
+  WeightRecord,
+  WorkoutExercise,
+  WorkoutWithPtNumber,
+} from "@/types";
+import {
+  calculateExerciseVolume,
+  calculateWorkoutVolume,
+  INTENSITY_LABEL,
+} from "@/lib/workoutCalculations";
 
 const SITE_LABEL: Record<string, string> = {
   abdomen: "복부",
@@ -62,6 +73,7 @@ export default function DayDetailModal({
       onClose={onClose}
       title={format(parseISO(date), "yyyy년 MM월 dd일", { locale: ko })}
       subtitle={format(parseISO(date), "EEEE", { locale: ko })}
+      maxWidth="lg"
     >
       <div className="space-y-5">
         {/* 일일 칼로리 요약 */}
@@ -160,12 +172,20 @@ export default function DayDetailModal({
                     )}
                     <span className="text-sm font-medium">{w.type || "운동"}</span>
                     <span className="text-xs text-[color:var(--muted)] tabular">{w.duration}분</span>
+                    {w.intensity && (
+                      <span className="rounded bg-black/5 px-1.5 py-0.5 text-[9px] font-medium text-[color:var(--muted-foreground)] dark:bg-white/5">
+                        {INTENSITY_LABEL[w.intensity]}
+                      </span>
+                    )}
                     {w.caloriesBurned != null && (
                       <span className="text-xs tabular text-[var(--color-slate-blue-600)] dark:text-[var(--color-slate-blue-400)]">
-                        {w.caloriesBurned} kcal
+                        {w.caloriesBurned} kcal{w.calorieEstimate?.method === "met" ? " 추정" : ""}
                       </span>
                     )}
                   </div>
+                  {!!w.exercises?.length && (
+                    <WorkoutExerciseDetails exercises={w.exercises} />
+                  )}
                   {w.lessonContent && (
                     <div className="text-xs mt-1 px-2 py-1.5 rounded-md bg-[var(--color-wine-500)]/8 border-l-2 border-[var(--color-wine-500)]/40">
                       <span className="text-[10px] font-semibold text-[var(--color-wine-500)] mr-1">수업</span>
@@ -249,6 +269,59 @@ export default function DayDetailModal({
         닫기
       </button>
     </Modal>
+  );
+}
+
+function WorkoutExerciseDetails({ exercises }: { exercises: WorkoutExercise[] }) {
+  const totalVolume = calculateWorkoutVolume(exercises);
+  const totalSets = exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0);
+
+  return (
+    <div className="mt-2 overflow-hidden rounded-xl border border-[var(--color-slate-blue-500)]/20 bg-white dark:bg-black/10">
+      <div className="flex items-center justify-between gap-2 border-b border-black/6 bg-[var(--color-slate-blue-500)]/[0.07] px-3 py-2 dark:border-white/6">
+        <span className="text-[10px] font-semibold text-[var(--color-slate-blue-600)] dark:text-[var(--color-slate-blue-400)]">
+          종목별 상세 기록
+        </span>
+        <span className="text-[9px] text-[color:var(--muted)] tabular">
+          {exercises.length}종목 · {totalSets}세트 · 총볼륨 {Math.round(totalVolume).toLocaleString()}kg
+        </span>
+      </div>
+      <div className="divide-y divide-black/6 dark:divide-white/6">
+        {exercises.map((exercise) => (
+          <ExerciseSets key={exercise.id} exercise={exercise} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ExerciseSets({ exercise }: { exercise: WorkoutExercise }) {
+  const volume = calculateExerciseVolume(exercise);
+  return (
+    <div className="px-3 py-2.5">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold">{exercise.name}</span>
+        <span className="text-[9px] text-[color:var(--muted)] tabular">
+          {exercise.sets.length}세트 · {Math.round(volume).toLocaleString()}kg
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+        {exercise.sets.map((set, index) => (
+          <div
+            key={`${exercise.id}-${index}`}
+            className="flex items-center justify-between gap-2 rounded-lg bg-black/[0.035] px-2.5 py-1.5 text-[10px] dark:bg-white/[0.04]"
+          >
+            <span className="text-[color:var(--muted)] tabular">{index + 1}세트</span>
+            <span className="font-semibold tabular">
+              {set.weightKg == null ? "체중" : `${set.weightKg}kg`} × {set.reps}회
+            </span>
+          </div>
+        ))}
+      </div>
+      {exercise.notes && (
+        <p className="mt-2 text-[10px] text-[color:var(--muted-foreground)]">{exercise.notes}</p>
+      )}
+    </div>
   );
 }
 

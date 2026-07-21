@@ -5,7 +5,14 @@ import {
   addDoc, deleteDoc, updateDoc, doc, Timestamp,
 } from "firebase/firestore";
 import { db, PERSONAL_USER_ID } from "@/lib/firebase";
-import type { WorkoutCategory, WorkoutRecord, WorkoutWithPtNumber } from "@/types";
+import type {
+  CalorieEstimate,
+  WorkoutCategory,
+  WorkoutExercise,
+  WorkoutIntensity,
+  WorkoutRecord,
+  WorkoutWithPtNumber,
+} from "@/types";
 
 export function useWorkouts() {
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>([]);
@@ -78,6 +85,9 @@ export function useWorkouts() {
     category?: WorkoutCategory;
     ptNumber?: number;
     lessonContent?: string;
+    exercises?: WorkoutExercise[];
+    intensity?: WorkoutIntensity;
+    calorieEstimate?: CalorieEstimate;
     caloriesBurned?: number;
     notes?: string;
   }) => {
@@ -89,6 +99,9 @@ export function useWorkouts() {
       category: params.category || "personal",
       ptNumber: params.ptNumber ?? null,
       lessonContent: params.lessonContent || "",
+      exercises: params.exercises || [],
+      intensity: params.intensity || "moderate",
+      calorieEstimate: params.calorieEstimate ?? null,
       caloriesBurned: params.caloriesBurned ?? null,
       notes: params.notes || "",
       createdAt: Timestamp.now(),

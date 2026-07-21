@@ -12,6 +12,26 @@ export type MealType = "아침" | "점심" | "저녁" | "간식";
 
 // ⭐ 운동 대분류
 export type WorkoutCategory = "PT" | "personal";
+export type WorkoutIntensity = "light" | "moderate" | "vigorous";
+
+export interface StrengthSet {
+  weightKg: number | null;
+  reps: number;
+}
+
+export interface WorkoutExercise {
+  id: string;
+  name: string;
+  sets: StrengthSet[];
+  notes?: string;
+}
+
+export interface CalorieEstimate {
+  method: "met";
+  met: number;
+  bodyWeightKg: number;
+  durationMin: number;
+}
 
 export interface UserProfile {
   name?: string;
@@ -51,6 +71,9 @@ export interface WorkoutRecord {
   category?: WorkoutCategory; // ⭐ PT or 개인운동
   ptNumber?: number; // ⭐ PT 회차를 수동 지정 시 저장 (없으면 자동 계산)
   lessonContent?: string; // ⭐ 오늘 PT에서 무슨 수업/운동을 했는지
+  exercises?: WorkoutExercise[]; // 종목별 중량·횟수·세트 상세
+  intensity?: WorkoutIntensity;
+  calorieEstimate?: CalorieEstimate;
   caloriesBurned?: number;
   notes: string;
   createdAt: Timestamp;
