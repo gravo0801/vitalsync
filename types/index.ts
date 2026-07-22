@@ -16,13 +16,30 @@ export type WorkoutIntensity = "light" | "moderate" | "vigorous";
 
 export interface StrengthSet {
   weightKg: number | null;
-  reps: number;
+  reps: number | null;
+  setNumber?: number;
+  addedWeightKg?: number | null;
+  machineBaseWeightKg?: number | null;
+  machineBaseWeightEstimated?: boolean;
+  estimated?: boolean;
+  notes?: string;
 }
 
 export interface WorkoutExercise {
   id: string;
   name: string;
   sets: StrengthSet[];
+  notes?: string;
+}
+
+export interface WorkoutCardioExercise {
+  id: string;
+  name: string;
+  durationMin: number | null;
+  speedKmh?: number | null;
+  distanceKm?: number | null;
+  inclinePercent?: number | null;
+  estimated?: boolean;
   notes?: string;
 }
 
@@ -72,6 +89,8 @@ export interface WorkoutRecord {
   ptNumber?: number; // ⭐ PT 회차를 수동 지정 시 저장 (없으면 자동 계산)
   lessonContent?: string; // ⭐ 오늘 PT에서 무슨 수업/운동을 했는지
   exercises?: WorkoutExercise[]; // 종목별 중량·횟수·세트 상세
+  cardioExercises?: WorkoutCardioExercise[]; // 유산소 시간·속도·거리 상세
+  durationDerivedFromCardio?: boolean;
   intensity?: WorkoutIntensity;
   calorieEstimate?: CalorieEstimate;
   caloriesBurned?: number;

@@ -5,6 +5,7 @@ import {
   addDoc, deleteDoc, updateDoc, doc, Timestamp,
 } from "firebase/firestore";
 import { db, PERSONAL_USER_ID } from "@/lib/firebase";
+import { normalizeWorkoutRecord } from "@/lib/workoutNormalization";
 import type {
   CalorieEstimate,
   WorkoutCategory,
@@ -26,7 +27,7 @@ export function useWorkouts() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as WorkoutRecord));
+        const docs = snap.docs.map((d) => normalizeWorkoutRecord(d.id, d.data()));
         docs.sort((a, b) => a.date.localeCompare(b.date));
         setWorkouts(docs);
         setLoading(false);

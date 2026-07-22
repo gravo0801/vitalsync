@@ -1,7 +1,15 @@
 # GPT 운동 자동화 저장 규격
 
+> 모든 `/api/workouts` 요청에는 GPT Action에 등록한
+> `Authorization: Bearer <VitalSync workout API key>` 헤더가 필요하다.
+
 GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 때 아래 구조를 사용한다.
 자유서술 메모만 저장하지 말고, 근력운동은 `exercises[].sets[]`를 반드시 채운다.
+
+기존 자동화가 사용하는 `strengthExercises[].exerciseName` + `sets[]` 구조도 앱에서 동일하게
+정규화해 표시한다. 유산소는 `cardioExercises[]`의 `durationMin`, `speedKmh`, `distanceKm`,
+`inclinePercent`를 읽는다. 즉 기존 자동화를 즉시 중단할 필요는 없지만, 두 구조 중 하나에는
+반드시 실제 세트 배열이 있어야 한다.
 
 ```json
 {
@@ -55,6 +63,9 @@ GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 �
 - `reps`: 해당 세트에서 완료한 반복 횟수
 - 같은 중량과 횟수를 반복해도 세트를 합치지 않고 배열 항목을 반복한다.
 - 기록에 없는 중량·횟수·시간을 추측해서 채우지 않는다.
+- 반복 횟수가 실제로 미기록이면 `reps: null`로 저장하고 앱에는 `횟수 미기록`으로 표시한다.
+- 기구 기본저항과 추가 원판을 나눠 기록한 경우 `machineBaseWeightKg`,
+  `machineBaseWeightEstimated`, `addedWeightKg`를 유지한다.
 
 ## 칼로리 계산
 
@@ -69,3 +80,15 @@ GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 �
 - `vigorous`: 6.0 MET
 
 중량 × 횟수의 합은 `총볼륨(kg)`으로 표시하며 칼로리 공식에 직접 넣지 않는다.
+
+## GPT Action API
+
+- 최근 5개 세션: `GET /api/workouts/recent?limit=5`
+- 특정 종목 최근 기록: `GET /api/workouts/exercises/recent?name=Rear%20deltoid&limit=5`
+- workoutId 상세: `GET /api/workouts/{workoutId}`
+- 확정 운동 저장: `POST /api/workouts`
+- Action 스키마: `/vitalsync-workout-openapi.yaml`
+
+모든 API 오류는 Next.js HTML 오류 페이지가 아니라 JSON의 `error`, `message` 필드로 반환한다.
+`POST /api/workouts`는 `confirmedByUser: true`를 필수로 확인하며 `Idempotency-Key` 헤더 또는
+본문의 `idempotencyKey`를 이용해 같은 운동의 중복 생성을 방지한다.
