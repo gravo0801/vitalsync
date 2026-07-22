@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
 
@@ -45,6 +45,14 @@ export default function Dashboard() {
   const [medicationOpen, setMedicationOpen] = useState(false);
   const [dayOpen, setDayOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const requestedDate = new URLSearchParams(window.location.search).get("date");
+    if (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+      setSelectedDate(requestedDate);
+      setDayOpen(true);
+    }
+  }, []);
 
   const loading = pLoading || wLoading || mLoading || woLoading || ibLoading || medLoading;
 
