@@ -77,3 +77,15 @@ GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 �
 - `vigorous`: 6.0 MET
 
 중량 × 횟수의 합은 `총볼륨(kg)`으로 표시하며 칼로리 공식에 직접 넣지 않는다.
+
+## GPT Action API
+
+- 최근 5개 세션: `GET /api/workouts/recent?limit=5`
+- 특정 종목 최근 기록: `GET /api/workouts/exercises/recent?name=Rear%20deltoid&limit=5`
+- workoutId 상세: `GET /api/workouts/{workoutId}`
+- 확정 운동 저장: `POST /api/workouts`
+- Action 스키마: `/vitalsync-workout-openapi.yaml`
+
+모든 API 오류는 Next.js HTML 오류 페이지가 아니라 JSON의 `error`, `message` 필드로 반환한다.
+`POST /api/workouts`는 `confirmedByUser: true`를 필수로 확인하며 `Idempotency-Key` 헤더 또는
+본문의 `idempotencyKey`를 이용해 같은 운동의 중복 생성을 방지한다.
