@@ -1,19 +1,102 @@
 import { createHash } from "node:crypto";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  serverTimestamp,
-  setDoc,
-  where,
-} from "firebase/firestore";
 
-import { PERSONAL_USER_ID } from "@/lib/firebaseConfig";
-import { serverDb } from "@/lib/firebaseServer";
+import { firebaseConfig, PERSONAL_USER_ID } from "@/lib/firebaseConfig";
 import { normalizeWorkoutRecord } from "@/lib/workoutNormalization";
 import type { WorkoutRecord } from "@/types";
+
+type FirestoreRestValue = Record<string, unknown>;
+type FirestoreRestDocument = {
+  name: string;
+  fields?: Record<string, FirestoreRestValue>;
+};
+
+const FIRESTORE_DOCUMENTS_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`;
+const FIRESTORE_API_KEY = firebaseConfig.apiKey;
+
+function decodeFirestoreValue(value: FirestoreRestValue): unknown {
+  if ("nullValue" in value) return null;
+  if ("booleanValue" in value) return value.booleanValue;
+  if ("integerValue" in value) return Number(value.integerValue);
+  if ("doubleValue" in value) return Number(value.doubleValue);
+  if ("stringValue" in value) return value.stringValue;
+  if ("timestampValue" in value) return value.timestampValue;
+  if ("arrayValue" in value) {
+    const arrayValue = value.arrayValue as { values?: FirestoreRestValue[] };
+    return (arrayValue.values ?? []).map(decodeFirestoreValue);
+  }
+  if ("mapValue" in value) {
+    const mapValue = value.mapValue as { fields?: Record<string, FirestoreRestValue> };
+    return decodeFirestoreFields(mapValue.fields ?? {});
+  }
+  return null;
+}
+
+function decodeFirestoreFields(fields: Record<string, FirestoreRestValue>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(fields).map(([key, value]) => [key, decodeFirestoreValue(value)]),
+  );
+}
+
+function encodeFirestoreValue(value: unknown): FirestoreRestValue {
+  if (value == null) return { nullValue: null };
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  }
+  if (typeof value === "string") return { stringValue: value };
+  if (value instanceof Date) return { timestampValue: value.toISOString() };
+  if (Array.isArray(value)) {
+    return { arrayValue: { values: value.map(encodeFirestoreValue) } };
+  }
+  if (typeof value === "object") {
+    return {
+      mapValue: {
+        fields: Object.fromEntries(
+          Object.entries(value as Record<string, unknown>)
+            .filter(([, nestedValue]) => nestedValue !== undefined)
+            .map(([key, nestedValue]) => [key, encodeFirestoreValue(nestedValue)]),
+        ),
+      },
+    };
+  }
+  return { nullValue: null };
+}
+
+function encodeFirestoreFields(record: Record<string, unknown>): Record<string, FirestoreRestValue> {
+  return Object.fromEntries(
+    Object.entries(record)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, encodeFirestoreValue(value)]),
+  );
+}
+
+function workoutIdFromName(name: string): string {
+  return name.split("/").pop() ?? "";
+}
+
+async function firestoreRequest(url: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${url}${url.includes("?") ? "&" : "?"}key=${encodeURIComponent(FIRESTORE_API_KEY)}`, {
+    ...init,
+    cache: "no-store",
+    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+  });
+}
+
+async function getFirestoreDocument(workoutId: string): Promise<FirestoreRestDocument | null> {
+  const response = await firestoreRequest(
+    `${FIRESTORE_DOCUMENTS_URL}/workouts/${encodeURIComponent(workoutId)}`,
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Firestore read failed (${response.status})`);
+  return response.json() as Promise<FirestoreRestDocument>;
+}
+
+function normalizeRestDocument(document: FirestoreRestDocument): WorkoutRecord {
+  return normalizeWorkoutRecord(
+    workoutIdFromName(document.name),
+    decodeFirestoreFields(document.fields ?? {}),
+  );
+}
 
 export interface WorkoutSavePayload {
   workoutId?: string;
@@ -70,16 +153,30 @@ function stableKey(payload: WorkoutSavePayload, requestedKey?: string | null): s
 }
 
 export async function listWorkoutRecords(): Promise<WorkoutRecord[]> {
-  const snapshot = await getDocs(
-    query(collection(serverDb, "workouts"), where("userId", "==", PERSONAL_USER_ID)),
-  );
+  const response = await firestoreRequest(`${FIRESTORE_DOCUMENTS_URL}:runQuery`, {
+    method: "POST",
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: "workouts" }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: "userId" },
+            op: "EQUAL",
+            value: { stringValue: PERSONAL_USER_ID },
+          },
+        },
+      },
+    }),
+  });
+  if (!response.ok) throw new Error(`Firestore query failed (${response.status})`);
+  const rows = (await response.json()) as Array<{ document?: FirestoreRestDocument }>;
 
-  return snapshot.docs
-    .map((snapshotDoc) => normalizeWorkoutRecord(snapshotDoc.id, snapshotDoc.data()))
+  return rows
+    .flatMap((row) => (row.document ? [normalizeRestDocument(row.document)] : []))
     .sort((a, b) => {
       const dateOrder = b.date.localeCompare(a.date);
       if (dateOrder !== 0) return dateOrder;
-      return (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0);
+      return String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""));
     });
 }
 
@@ -87,9 +184,11 @@ export async function getWorkoutRecord(workoutId: string): Promise<WorkoutRecord
   const safeId = safeWorkoutId(workoutId);
   if (!safeId) return null;
 
-  const snapshot = await getDoc(doc(serverDb, "workouts", safeId));
-  if (!snapshot.exists() || snapshot.data().userId !== PERSONAL_USER_ID) return null;
-  return normalizeWorkoutRecord(snapshot.id, snapshot.data());
+  const document = await getFirestoreDocument(safeId);
+  if (!document) return null;
+  const data = decodeFirestoreFields(document.fields ?? {});
+  if (data.userId !== PERSONAL_USER_ID) return null;
+  return normalizeWorkoutRecord(safeId, data);
 }
 
 export async function saveConfirmedWorkout(
@@ -106,12 +205,12 @@ export async function saveConfirmedWorkout(
   const idempotencyKey = stableKey(payload, requestedIdempotencyKey);
   const hash = createHash("sha256").update(idempotencyKey).digest("hex").slice(0, 16);
   const workoutId = safeWorkoutId(payload.workoutId) ?? `gpt-${payload.date}-${hash}`;
-  const reference = doc(serverDb, "workouts", workoutId);
-  const existing = await getDoc(reference);
+  const existing = await getFirestoreDocument(workoutId);
 
-  if (existing.exists()) {
-    if (existing.data().userId !== PERSONAL_USER_ID) throw new Error("workoutId is not available");
-    return { status: "existing", workout: normalizeWorkoutRecord(existing.id, existing.data()) };
+  if (existing) {
+    const existingData = decodeFirestoreFields(existing.fields ?? {});
+    if (existingData.userId !== PERSONAL_USER_ID) throw new Error("workoutId is not available");
+    return { status: "existing", workout: normalizeWorkoutRecord(workoutId, existingData) };
   }
 
   const record = {
@@ -141,13 +240,19 @@ export async function saveConfirmedWorkout(
     idempotencyKey,
     idempotencyRequestId: cleanString(payload.idempotencyRequestId),
     savedAt: new Date().toISOString(),
-    createdAt: serverTimestamp(),
+    createdAt: new Date(),
   };
 
-  await setDoc(reference, record);
-  const saved = await getDoc(reference);
-  if (!saved.exists()) throw new Error("saved workout could not be read back");
-  return { status: "created", workout: normalizeWorkoutRecord(saved.id, saved.data()) };
+  const response = await firestoreRequest(
+    `${FIRESTORE_DOCUMENTS_URL}/workouts/${encodeURIComponent(workoutId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ fields: encodeFirestoreFields(record) }),
+    },
+  );
+  if (!response.ok) throw new Error(`Firestore save failed (${response.status})`);
+  const saved = (await response.json()) as FirestoreRestDocument;
+  return { status: "created", workout: normalizeRestDocument(saved) };
 }
 
 export function workoutApiPayload(workout: WorkoutRecord, origin: string) {
