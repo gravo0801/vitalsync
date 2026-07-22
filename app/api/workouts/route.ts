@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { isWorkoutApiAuthorized, workoutApiUnauthorizedResponse } from "@/lib/workoutApiAuth";
 import {
   listWorkoutRecords,
   saveConfirmedWorkout,
@@ -15,6 +16,8 @@ function limitFrom(request: NextRequest): number {
 }
 
 export async function GET(request: NextRequest) {
+  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse();
+
   try {
     const workouts = await listWorkoutRecords();
     const limit = limitFrom(request);
@@ -33,6 +36,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse();
+
   try {
     const payload = (await request.json()) as WorkoutSavePayload;
     const idempotencyKey = request.headers.get("idempotency-key") ?? request.headers.get("x-idempotency-key");
