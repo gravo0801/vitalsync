@@ -6,16 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:workouts": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.0",
     "date-fns": "^4.1.0",
     "firebase": "^11.4.0",
     "lucide-react": "^0.507.0",
-    "next": "15.3.6",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "next": "15.5.21",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "recharts": "^2.15.3",
     "sonner": "^2.0.3"
   },

@@ -19,6 +19,11 @@ import {
   INTENSITY_LABEL,
   summarizeCardio,
 } from "@/lib/workoutCalculations";
+import { nonRedundantExerciseNote } from "@/lib/workoutNotes";
+import {
+  ACTIVITY_TYPE_LABEL,
+  workoutDurationDisplay,
+} from "@/lib/workoutPresentation";
 
 const SITE_LABEL: Record<string, string> = {
   abdomen: "복부",
@@ -156,8 +161,11 @@ export default function DayDetailModal({
           {dayWorkouts.length === 0 ? (
             <Empty />
           ) : (
-            dayWorkouts.map((w) => (
-              <Row key={w.id} onDelete={() => handleDelete(() => onDeleteWorkout(w.id))}>
+            dayWorkouts.map((w) => {
+              const durationDisplay = workoutDurationDisplay(w);
+
+              return (
+                <Row key={w.id} onDelete={() => handleDelete(() => onDeleteWorkout(w.id))}>
                 <div className="flex flex-col flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* ⭐ 카테고리 뱃지 */}
@@ -175,7 +183,7 @@ export default function DayDetailModal({
                     )}
                     <span className="text-sm font-medium">{w.type || "운동"}</span>
                     <span className="text-xs text-[color:var(--muted)] tabular">
-                      {w.duration}분{w.durationDerivedFromCardio ? " (유산소 기록)" : ""}
+                      {durationDisplay.value}{durationDisplay.suffix}
                     </span>
                     {w.intensity && (
                       <span className="rounded bg-black/5 px-1.5 py-0.5 text-[9px] font-medium text-[color:var(--muted-foreground)] dark:bg-white/5">
@@ -207,7 +215,8 @@ export default function DayDetailModal({
                   )}
                 </div>
               </Row>
-            ))
+              );
+            })
           )}
         </Section>
 
@@ -305,6 +314,10 @@ function WorkoutExerciseDetails({ exercises }: { exercises: WorkoutExercise[] })
 
 function ExerciseSets({ exercise }: { exercise: WorkoutExercise }) {
   const volume = calculateExerciseVolume(exercise);
+  const exerciseNote = nonRedundantExerciseNote(
+    exercise.notes,
+    exercise.sets.map((set) => set.notes),
+  );
   const hasKnownVolume = exercise.sets.some(
     (set) =>
       set.reps != null &&
@@ -334,23 +347,57 @@ function ExerciseSets({ exercise }: { exercise: WorkoutExercise }) {
           </div>
         ))}
       </div>
-      {exercise.notes && (
-        <p className="mt-2 text-[10px] text-[color:var(--muted-foreground)]">{exercise.notes}</p>
+      {exerciseNote && (
+        <p className="mt-2 text-[10px] text-[color:var(--muted-foreground)]">{exerciseNote}</p>
       )}
     </div>
   );
 }
 
 function WorkoutCardioDetails({ exercises }: { exercises: WorkoutCardioExercise[] }) {
+  const cardioExercises = exercises.filter(
+    (exercise) => exercise.activityType === "cardio",
+  );
+  const recoveryExercises = exercises.filter(
+    (exercise) => exercise.activityType !== "cardio",
+  );
+
+  return (
+    <>
+      {cardioExercises.length > 0 && (
+        <TimedActivityGroup title="유산소 상세 기록" exercises={cardioExercises} />
+      )}
+      {recoveryExercises.length > 0 && (
+        <TimedActivityGroup
+          title="스트레칭·모빌리티"
+          exercises={recoveryExercises}
+        />
+      )}
+    </>
+  );
+}
+
+function TimedActivityGroup({
+  title,
+  exercises,
+}: {
+  title: string;
+  exercises: WorkoutCardioExercise[];
+}) {
   return (
     <div className="mt-2 overflow-hidden rounded-xl border border-[var(--color-sage-500)]/20 bg-white dark:bg-black/10">
       <div className="border-b border-black/6 bg-[var(--color-sage-500)]/[0.07] px-3 py-2 text-[10px] font-semibold text-[var(--color-sage-600)] dark:border-white/6 dark:text-[var(--color-sage-400)]">
-        유산소 상세 기록
+        {title}
       </div>
       <div className="divide-y divide-black/6 dark:divide-white/6">
         {exercises.map((exercise) => (
           <div key={exercise.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
-            <span className="text-xs font-semibold">{exercise.name}</span>
+            <span className="flex items-center gap-1.5 text-xs font-semibold">
+              {exercise.name}
+              <span className="rounded-full bg-[var(--color-sage-500)]/10 px-1.5 py-0.5 text-[8px] text-[var(--color-sage-600)] dark:text-[var(--color-sage-400)]">
+                {ACTIVITY_TYPE_LABEL[exercise.activityType]}
+              </span>
+            </span>
             <span className="text-[10px] text-[color:var(--muted-foreground)] tabular">
               {summarizeCardio(exercise)}
             </span>

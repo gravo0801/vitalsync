@@ -13,6 +13,13 @@ export type MealType = "아침" | "점심" | "저녁" | "간식";
 // ⭐ 운동 대분류
 export type WorkoutCategory = "PT" | "personal";
 export type WorkoutIntensity = "light" | "moderate" | "vigorous";
+export type WorkoutActivityType = "cardio" | "stretching" | "mobility";
+export type WorkoutDurationSource =
+  | "explicit"
+  | "estimated"
+  | "timestamps"
+  | "activities"
+  | "missing";
 
 export interface StrengthSet {
   weightKg: number | null;
@@ -35,6 +42,7 @@ export interface WorkoutExercise {
 export interface WorkoutCardioExercise {
   id: string;
   name: string;
+  activityType: WorkoutActivityType;
   durationMin: number | null;
   speedKmh?: number | null;
   distanceKm?: number | null;
@@ -89,7 +97,11 @@ export interface WorkoutRecord {
   ptNumber?: number; // ⭐ PT 회차를 수동 지정 시 저장 (없으면 자동 계산)
   lessonContent?: string; // ⭐ 오늘 PT에서 무슨 수업/운동을 했는지
   exercises?: WorkoutExercise[]; // 종목별 중량·횟수·세트 상세
-  cardioExercises?: WorkoutCardioExercise[]; // 유산소 시간·속도·거리 상세
+  cardioExercises?: WorkoutCardioExercise[]; // 시간 기반 활동 상세(유산소·스트레칭·모빌리티)
+  durationEstimated?: boolean;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  durationSource?: WorkoutDurationSource;
   durationDerivedFromCardio?: boolean;
   intensity?: WorkoutIntensity;
   calorieEstimate?: CalorieEstimate;

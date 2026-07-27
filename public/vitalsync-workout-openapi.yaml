@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: VitalSync Workout API
-  version: 1.0.0
+  version: 1.1.0
 security:
   - bearerAuth: []
   description: 최근 운동 조회, 종목별 이력 조회, 확정 운동 저장 API
@@ -186,6 +186,11 @@ components:
       properties:
         exerciseName:
           type: string
+        activityType:
+          type: string
+          enum: [cardio, stretching, mobility]
+          default: cardio
+          description: 유산소, 스트레칭, 모빌리티를 구분한다. 기존 요청에서 생략하면 운동명으로 추론한다.
         durationMin:
           type: [number, "null"]
         speedKmh:
@@ -220,12 +225,16 @@ components:
           default: personal
         duration:
           type: [number, "null"]
+          description: 전체 운동시간(분). 세부 활동시간의 합계와 구분한다.
         durationEstimated:
           type: boolean
+          description: duration이 실제 측정값이 아닌 추정값이면 true
         startedAt:
           type: [string, "null"]
+          description: 운동 시작 시각. ISO 8601 또는 HH:mm
         endedAt:
           type: [string, "null"]
+          description: 운동 종료 시각. ISO 8601 또는 HH:mm
         strengthExercises:
           type: array
           items:

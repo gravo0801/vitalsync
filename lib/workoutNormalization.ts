@@ -2,7 +2,9 @@ import type { DocumentData } from "firebase/firestore";
 
 import type {
   StrengthSet,
+  WorkoutActivityType,
   WorkoutCardioExercise,
+  WorkoutDurationSource,
   WorkoutExercise,
   WorkoutRecord,
 } from "@/types";
@@ -24,6 +26,64 @@ function asNumber(value: unknown): number | null {
 
 function asString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function normalizeActivityType(
+  value: unknown,
+  exerciseName: string,
+): WorkoutActivityType {
+  const declaredType = asString(value)?.toLocaleLowerCase();
+  if (
+    declaredType === "cardio" ||
+    declaredType === "stretching" ||
+    declaredType === "mobility"
+  ) {
+    return declaredType;
+  }
+
+  const normalizedName = exerciseName.toLocaleLowerCase().replace(/[\s_-]+/gu, "");
+  if (
+    ["스트레칭", "스트레치", "stretch", "몸풀기", "목풀기", "허리풀기"].some(
+      (keyword) => normalizedName.includes(keyword),
+    )
+  ) {
+    return "stretching";
+  }
+  if (
+    ["모빌리티", "mobility", "가동성"].some((keyword) =>
+      normalizedName.includes(keyword),
+    )
+  ) {
+    return "mobility";
+  }
+  return "cardio";
+}
+
+function durationFromTimestamps(
+  startedAt: string | undefined,
+  endedAt: string | undefined,
+  date: string,
+): number | null {
+  if (!startedAt || !endedAt) return null;
+
+  const parseDateTime = (value: string) => {
+    const candidate = /^\d{1,2}:\d{2}$/u.test(value)
+      ? `${date}T${value}:00`
+      : value;
+    const parsed = Date.parse(candidate);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const start = parseDateTime(startedAt);
+  let end = parseDateTime(endedAt);
+  if (start == null || end == null) return null;
+
+  if (end < start && /^\d{1,2}:\d{2}$/u.test(startedAt) && /^\d{1,2}:\d{2}$/u.test(endedAt)) {
+    end += 24 * 60 * 60 * 1000;
+  }
+
+  const durationMin = Math.round((end - start) / 60_000);
+  return durationMin > 0 && durationMin <= 24 * 60 ? durationMin : null;
 }
 
 function normalizeSet(value: unknown, index: number): StrengthSet | null {
@@ -89,6 +149,10 @@ function normalizeCardio(value: unknown, index: number): WorkoutCardioExercise |
       asString(exercise.canonicalExerciseId) ??
       `cardio-${index + 1}`,
     name,
+    activityType: normalizeActivityType(
+      exercise.activityType ?? exercise.kind ?? exercise.category,
+      name,
+    ),
     durationMin: asNumber(exercise.durationMin),
     speedKmh: asNumber(exercise.speedKmh),
     distanceKm: asNumber(exercise.distanceKm),
@@ -103,6 +167,7 @@ function normalizeCardio(value: unknown, index: number): WorkoutCardioExercise |
  * 앱의 exercises 스키마를 하나의 화면 모델로 합친다.
  */
 export function normalizeWorkoutRecord(id: string, data: DocumentData): WorkoutRecord {
+  const date = asString(data.date) ?? "";
   const directExercises = Array.isArray(data.exercises)
     ? data.exercises
         .map((exercise: unknown, index: number) => normalizeExercise(exercise, index))
@@ -124,18 +189,37 @@ export function normalizeWorkoutRecord(id: string, data: DocumentData): WorkoutR
     : [];
 
   const explicitDuration = asNumber(data.duration);
-  const cardioDuration = cardioExercises.reduce(
+  const activityDuration = cardioExercises.reduce(
     (sum, exercise) => sum + (exercise.durationMin ?? 0),
     0,
   );
-  const duration = explicitDuration != null && explicitDuration > 0 ? explicitDuration : cardioDuration;
+  const startedAt = asString(data.startedAt);
+  const endedAt = asString(data.endedAt);
+  const timestampDuration = durationFromTimestamps(startedAt, endedAt, date);
+  const hasExplicitDuration = explicitDuration != null && explicitDuration > 0;
+  const duration = hasExplicitDuration
+    ? explicitDuration
+    : timestampDuration ?? activityDuration;
+  const durationSource: WorkoutDurationSource = hasExplicitDuration
+    ? data.durationEstimated === true
+      ? "estimated"
+      : "explicit"
+    : timestampDuration != null
+      ? "timestamps"
+      : activityDuration > 0
+        ? "activities"
+        : "missing";
 
   return {
     ...(data as WorkoutRecord),
     id,
-    date: asString(data.date) ?? "",
+    date,
     duration,
-    durationDerivedFromCardio: !(explicitDuration != null && explicitDuration > 0) && cardioDuration > 0,
+    durationEstimated: data.durationEstimated === true,
+    startedAt: startedAt ?? null,
+    endedAt: endedAt ?? null,
+    durationSource,
+    durationDerivedFromCardio: durationSource === "activities",
     exercises: directExercises.length > 0 ? directExercises : legacyExercises,
     cardioExercises,
     notes: asString(data.notes) ?? "",
