@@ -72,13 +72,21 @@ export function useOwnerAuth() {
   return value;
 }
 
-export default function AuthGate({ children }: { children: ReactNode }) {
+export default function AuthGate({
+  children,
+  previewBypass = false,
+}: {
+  children: ReactNode;
+  previewBypass?: boolean;
+}) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!previewBypass);
   const [unauthorized, setUnauthorized] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
+    if (previewBypass) return;
+
     return onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         setUser(null);
@@ -90,7 +98,6 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       setErrorMessage("");
 
       try {
-        // 새 custom claim이 설정된 경우 즉시 반영되도록 강제로 토큰을 갱신한다.
         const tokenResult = await currentUser.getIdTokenResult(true);
 
         if (!isApprovedOwner(currentUser, tokenResult.claims)) {
@@ -112,7 +119,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     });
-  }, []);
+  }, [previewBypass]);
 
   const signIn = useCallback(async () => {
     setLoading(true);
@@ -147,6 +154,12 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       signOutOwner: () => signOut(auth),
     };
   }, [user]);
+
+  // Preview deployments remain protected by Vercel Authentication. This bypass is
+  // deliberately server-controlled and cannot be enabled by a browser query string.
+  if (previewBypass) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (
