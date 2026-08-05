@@ -2,13 +2,23 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // 식사 사진
-    match /meals/personal-user/{fileName} {
-      allow read, write: if true;
+    function isOwner() {
+      return request.auth != null
+        && (
+          request.auth.token.owner == true
+          || (
+            request.auth.token.email_verified == true
+            && request.auth.token.email == "fnaticdoc@gmail.com"
+          )
+        );
     }
-    // ⭐ 인바디 결과지 (사진/PDF)
+
+    match /meals/personal-user/{fileName} {
+      allow read, write: if isOwner();
+    }
+
     match /inbody/personal-user/{fileName} {
-      allow read, write: if true;
+      allow read, write: if isOwner();
     }
   }
 }
