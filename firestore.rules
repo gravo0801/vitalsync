@@ -2,41 +2,49 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner() {
+      return request.auth != null
+        && (
+          request.auth.token.owner == true
+          || (
+            request.auth.token.email_verified == true
+            && request.auth.token.email == "fnaticdoc@gmail.com"
+          )
+        );
+    }
 
     match /profiles/{userId} {
-      allow read, write: if userId == "personal-user";
+      allow read, write: if isOwner() && userId == "personal-user";
     }
 
     match /weights/{docId} {
-      allow read: if resource.data.userId == "personal-user";
-      allow create: if request.resource.data.userId == "personal-user";
-      allow update, delete: if resource.data.userId == "personal-user";
+      allow read: if isOwner() && resource.data.userId == "personal-user";
+      allow create: if isOwner() && request.resource.data.userId == "personal-user";
+      allow update, delete: if isOwner() && resource.data.userId == "personal-user";
     }
 
     match /meals/{docId} {
-      allow read: if resource.data.userId == "personal-user";
-      allow create: if request.resource.data.userId == "personal-user";
-      allow update, delete: if resource.data.userId == "personal-user";
+      allow read: if isOwner() && resource.data.userId == "personal-user";
+      allow create: if isOwner() && request.resource.data.userId == "personal-user";
+      allow update, delete: if isOwner() && resource.data.userId == "personal-user";
     }
 
     match /workouts/{docId} {
-      allow read: if resource.data.userId == "personal-user";
-      allow create: if request.resource.data.userId == "personal-user";
-      allow update, delete: if resource.data.userId == "personal-user";
+      allow read: if isOwner() && resource.data.userId == "personal-user";
+      allow create: if isOwner() && request.resource.data.userId == "personal-user";
+      allow update, delete: if isOwner() && resource.data.userId == "personal-user";
     }
 
-    // ⭐ 인바디 측정 결과
     match /inbody/{docId} {
-      allow read: if resource.data.userId == "personal-user";
-      allow create: if request.resource.data.userId == "personal-user";
-      allow update, delete: if resource.data.userId == "personal-user";
+      allow read: if isOwner() && resource.data.userId == "personal-user";
+      allow create: if isOwner() && request.resource.data.userId == "personal-user";
+      allow update, delete: if isOwner() && resource.data.userId == "personal-user";
     }
 
-    // ⭐ Mounjaro (GLP-1) 주간 주사 기록
     match /medications/{docId} {
-      allow read: if resource.data.userId == "personal-user";
-      allow create: if request.resource.data.userId == "personal-user";
-      allow update, delete: if resource.data.userId == "personal-user";
+      allow read: if isOwner() && resource.data.userId == "personal-user";
+      allow create: if isOwner() && request.resource.data.userId == "personal-user";
+      allow update, delete: if isOwner() && resource.data.userId == "personal-user";
     }
   }
 }
