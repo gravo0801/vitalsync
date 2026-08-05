@@ -21,6 +21,8 @@ const themeScript = `
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const previewBypass = process.env.VERCEL_ENV === "preview";
+
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
@@ -37,7 +39,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="antialiased">
-        <AuthGate>{children}</AuthGate>
+        <AuthGate previewBypass={previewBypass}>{children}</AuthGate>
         <Toaster position="top-center" richColors closeButton theme="system" />
       </body>
     </html>
