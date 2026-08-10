@@ -54,7 +54,7 @@ export default function Sidebar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors ${
+                    className={`flex min-h-11 items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors ${
                       active
                         ? "bg-[var(--color-ink-900)] dark:bg-white/10 text-white"
                         : "text-[color:var(--muted-foreground)] hover:bg-black/5 dark:hover:bg-white/5"
@@ -74,7 +74,7 @@ export default function Sidebar() {
         {mounted && (
           <button
             onClick={toggle}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-[color:var(--muted-foreground)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            className="w-full min-h-11 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-[color:var(--muted-foreground)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
           >
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             {theme === "dark" ? "라이트 모드" : "다크 모드"}
@@ -88,10 +88,16 @@ export default function Sidebar() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-30 p-2 rounded-xl bg-white/80 dark:bg-[var(--color-ink-900)]/80 backdrop-blur border border-black/5 dark:border-white/5"
+        className="lg:hidden fixed z-30 flex h-11 w-11 items-center justify-center rounded-xl bg-white/85 dark:bg-[var(--color-ink-900)]/85 backdrop-blur border border-black/5 dark:border-white/5 shadow-sm"
+        style={{
+          top: "max(1rem, env(safe-area-inset-top))",
+          left: "max(1rem, env(safe-area-inset-left))",
+        }}
         aria-label="메뉴 열기"
+        aria-expanded={open}
+        aria-controls="vitalsync-sidebar"
       >
-        <Menu size={18} />
+        <Menu size={19} />
       </button>
 
       {open && (
@@ -102,18 +108,21 @@ export default function Sidebar() {
       )}
 
       <aside
+        id="vitalsync-sidebar"
         className={`
-          fixed lg:sticky top-0 left-0 h-screen w-60 z-50
+          fixed lg:sticky top-0 left-0 h-[100dvh] w-60 z-50
           bg-[var(--color-cream-150)] dark:bg-[var(--color-ink-900)]
           border-r border-black/5 dark:border-white/5
           flex flex-col
+          pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]
           transition-transform duration-200
           ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
         `}
       >
         <button
           onClick={() => setOpen(false)}
-          className="lg:hidden absolute top-4 right-4 p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+          className="lg:hidden absolute top-4 right-4 flex h-11 w-11 items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+          aria-label="메뉴 닫기"
         >
           <X size={18} />
         </button>
