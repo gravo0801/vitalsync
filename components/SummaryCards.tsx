@@ -119,7 +119,7 @@ export default function SummaryCards({
   const showMedicationCard = medications.length > 0 || !!onAddMedication;
 
   return (
-    <div className={`grid grid-cols-1 ${showMedicationCard ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"} gap-3 mb-6`}>
+    <div className={`grid grid-cols-1 ${showMedicationCard ? "min-[600px]:grid-cols-2 min-[900px]:grid-cols-4" : "min-[600px]:grid-cols-3"} gap-3 mb-6`}>
       {/* 현재 체중 / BMI */}
       <Card accentColor="sage">
         <CardLabel>현재 <span className="serif-italic">체중</span> · BMI</CardLabel>
@@ -235,7 +235,7 @@ export default function SummaryCards({
               {onAddMedication && (
                 <button
                   onClick={onAddMedication}
-                  className="mt-3 w-full py-2 rounded-xl bg-[var(--color-mauve-500)] hover:opacity-90 text-white text-xs font-medium"
+                  className="mt-3 w-full min-h-11 py-2 rounded-xl bg-[var(--color-mauve-500)] hover:opacity-90 text-white text-xs font-medium"
                 >
                   지금 기록하기
                 </button>
@@ -273,7 +273,7 @@ export function Card({
         relative overflow-hidden
         bg-white dark:bg-[var(--color-ink-900)]
         border border-black/6 dark:border-white/6
-        rounded-2xl p-5
+        rounded-2xl p-4 min-[420px]:p-5
         ${className}
       `}
       style={accentColor ? { ["--accent-color" as never]: ACCENT_COLOR_MAP[accentColor] } : undefined}

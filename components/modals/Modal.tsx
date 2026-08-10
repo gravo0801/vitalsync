@@ -47,26 +47,34 @@ export default function Modal({
           rounded-t-3xl sm:rounded-2xl w-full ${maxWidth === "lg" ? "sm:max-w-2xl" : "sm:max-w-md"}
           bg-white dark:bg-[var(--color-ink-900)]
           border border-black/5 dark:border-white/8
-          shadow-xl max-h-[90vh] overflow-y-auto
+          shadow-xl overflow-y-auto overscroll-contain
         `}
+        style={{
+          maxHeight: "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 0.5rem)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white dark:bg-[var(--color-ink-900)] border-b border-black/5 dark:border-white/5 px-6 py-4 flex items-start justify-between">
-          <div>
-            <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+        <div className="sticky top-0 z-10 bg-white/95 dark:bg-[var(--color-ink-900)]/95 backdrop-blur border-b border-black/5 dark:border-white/5 px-4 sm:px-6 py-3.5 sm:py-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold tracking-tight break-keep">{title}</h3>
             {subtitle && (
               <p className="text-xs text-[color:var(--muted)] mt-0.5">{subtitle}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 -mr-1.5"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5 -mr-2 -mt-1.5"
             aria-label="닫기"
           >
             <X size={18} />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div
+          className="px-4 sm:px-6 pt-5 sm:pt-6"
+          style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -74,7 +82,7 @@ export default function Modal({
 
 // 공통 input 스타일
 export const inputClass = `
-  w-full px-3.5 py-2.5 rounded-xl
+  w-full min-h-11 px-3.5 py-2.5 rounded-xl
   bg-[var(--color-cream-50)] dark:bg-white/5
   border border-black/8 dark:border-white/10
   text-[color:var(--foreground)]
@@ -105,7 +113,7 @@ export function PrimaryButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex-1 py-3 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 ${colorMap[color]}`}
+      className={`flex-1 min-h-11 py-3 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 ${colorMap[color]}`}
     >
       {children}
     </button>
@@ -121,7 +129,7 @@ export function SecondaryButton({
   return (
     <button
       onClick={onClick}
-      className="flex-1 py-3 rounded-xl text-sm font-medium bg-black/5 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/8 transition-colors"
+      className="flex-1 min-h-11 py-3 rounded-xl text-sm font-medium bg-black/5 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/8 transition-colors"
     >
       {children}
     </button>

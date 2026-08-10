@@ -1,10 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "VitalSync",
   description: "스마트 다이어트 & 바디 관리",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 // hydration mismatch 방지 - 첫 렌더링 전에 localStorage 읽어 dark 클래스 미리 부착

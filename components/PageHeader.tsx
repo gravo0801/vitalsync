@@ -15,16 +15,16 @@ export default function PageHeader({
 }: Props) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-      <div className="pl-12 lg:pl-0">
-        <p className="text-sm text-[color:var(--muted)]">
+      <div className="pl-12 lg:pl-0 min-w-0">
+        <p className="text-sm text-[color:var(--muted)] truncate">
           안녕하세요, <span className="text-[color:var(--foreground)]">{name || "그라보"}</span>님 👋
         </p>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-1">
+        <h1 className="text-2xl min-[390px]:text-3xl sm:text-4xl font-semibold tracking-tight mt-1 break-keep">
           오늘의 <span className="serif-italic text-[color:var(--color-terra-600)]">{greeting || "건강 현황"}</span>
         </h1>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-1.5 w-full sm:w-auto">
         <ActionButton onClick={onAddWeight} color="sage">체중</ActionButton>
         <ActionButton onClick={onAddMeal} color="terra">식사</ActionButton>
         <ActionButton onClick={onAddWorkout} color="slate-blue">운동</ActionButton>
@@ -54,7 +54,7 @@ function ActionButton({
     <button
       onClick={onClick}
       className={`
-        flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium
+        flex min-h-11 w-full sm:w-auto items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium
         bg-white dark:bg-white/5
         border border-black/8 dark:border-white/10
         text-[color:var(--foreground)]

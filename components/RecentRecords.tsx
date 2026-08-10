@@ -37,7 +37,7 @@ export default function RecentRecords({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+    <div className="grid grid-cols-1 min-[760px]:grid-cols-2 gap-3 mb-6">
       <Card>
         <h3 className="text-base font-semibold tracking-tight mb-3">
           최근 <span className="serif-italic">체중</span>
@@ -51,15 +51,15 @@ export default function RecentRecords({
                 key={w.id}
                 onDelete={() => handleDeleteWeight(w.id)}
               >
-                <div className="flex flex-col">
-                  <span className="text-sm">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm whitespace-nowrap">
                     {format(parseISO(w.date), "yyyy.MM.dd (E)", { locale: ko })}
                   </span>
                   {w.memo && (
-                    <span className="text-xs text-[color:var(--muted)] mt-0.5">{w.memo}</span>
+                    <span className="text-xs text-[color:var(--muted)] mt-0.5 truncate">{w.memo}</span>
                   )}
                 </div>
-                <span className="font-semibold tabular text-sm">{w.weight} <span className="text-xs font-normal text-[color:var(--muted)]">kg</span></span>
+                <span className="font-semibold tabular text-sm shrink-0">{w.weight} <span className="text-xs font-normal text-[color:var(--muted)]">kg</span></span>
               </RecordRow>
             ))}
           </div>
@@ -117,11 +117,11 @@ function RecordRow({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-black/3 dark:hover:bg-white/5 group">
-      <div className="flex-1 flex items-center gap-3 justify-between">{children}</div>
+    <div className="flex items-center gap-2 min-[420px]:gap-3 px-1 min-[420px]:px-2 py-2 rounded-lg hover:bg-black/3 dark:hover:bg-white/5 group">
+      <div className="flex-1 min-w-0 flex items-center gap-2 min-[420px]:gap-3 justify-between">{children}</div>
       <button
         onClick={onDelete}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-[var(--color-wine-500)]/10"
+        className="opacity-0 group-hover:opacity-100 transition-opacity flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-[var(--color-wine-500)]/10"
         aria-label="삭제"
       >
         <Trash2 size={13} className="text-[var(--color-wine-500)]" />
