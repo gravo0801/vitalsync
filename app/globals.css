@@ -81,6 +81,9 @@ html {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  min-width: 0;
 }
 
 body {
@@ -88,6 +91,15 @@ body {
   background: var(--background);
   font-feature-settings: "ss01", "cv01", "cv11";
   letter-spacing: -0.011em;
+  min-width: 0;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+main,
+section,
+article {
+  min-width: 0;
 }
 
 /* 한글 line-height 후하게 */
@@ -170,4 +182,47 @@ select {
 }
 .dark .progress-bar {
   background: rgb(255 255 255 / 0.1);
+}
+
+/* ============================================
+   Fold / mobile 안정성
+   - 주소창 높이가 변하는 모바일 브라우저에서는 dvh 사용
+   - 노치/라운드 코너의 safe-area 하단 확보
+   - 터치 기기에서 hover 전용 컨트롤을 노출
+   ============================================ */
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+
+  .h-screen {
+    height: 100dvh;
+  }
+}
+
+@supports (padding: max(0px)) {
+  main {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"],
+  input,
+  select {
+    min-height: 44px;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 데스크톱 hover에서만 보이던 삭제/보조 버튼을 터치 화면에서는 항상 노출 */
+  .group .opacity-0 {
+    opacity: 1;
+  }
 }
