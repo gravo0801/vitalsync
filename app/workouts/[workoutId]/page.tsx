@@ -14,6 +14,11 @@ import {
   summarizeCardio,
   totalWorkoutSets,
 } from "@/lib/workoutCalculations";
+import { nonRedundantExerciseNote } from "@/lib/workoutNotes";
+import {
+  ACTIVITY_TYPE_LABEL,
+  workoutDurationDisplay,
+} from "@/lib/workoutPresentation";
 import type { WorkoutRecord } from "@/types";
 
 const STORAGE_KEY = "vitalsync-workout-api-key";
@@ -104,6 +109,7 @@ export default function WorkoutDetailPage() {
   const totalVolume = calculateWorkoutVolume(exercises);
   const totalSets = totalWorkoutSets(exercises);
   const formattedDate = format(parseISO(workout.date), "yyyy년 M월 d일 (E)", { locale: ko });
+  const durationDisplay = workoutDurationDisplay(workout);
 
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6">
@@ -120,32 +126,48 @@ export default function WorkoutDetailPage() {
           <div className="grid grid-cols-3 gap-px bg-black/6 dark:bg-white/6">
             <Summary icon={<Dumbbell size={14} />} label="근력" value={`${totalSets}세트`} />
             <Summary icon={<Gauge size={14} />} label="총볼륨" value={`${Math.round(totalVolume).toLocaleString()}kg`} />
-            <Summary icon={<Timer size={14} />} label={workout.durationDerivedFromCardio ? "유산소 기록" : "운동시간"} value={`${workout.duration}분`} />
+            <Summary
+              icon={<Timer size={14} />}
+              label={durationDisplay.label}
+              value={durationDisplay.value}
+            />
           </div>
           <div className="space-y-5 p-5 sm:p-6">
-            {exercises.map((exercise) => (
-              <section key={exercise.id} className="rounded-xl border border-black/6 p-3.5 dark:border-white/6">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-sm font-semibold">{exercise.name}</h2>
-                  <span className="text-[10px] text-[color:var(--muted)] tabular">{exercise.sets.length}세트 · {Math.round(calculateExerciseVolume(exercise)).toLocaleString()}kg</span>
-                </div>
-                <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
-                  {exercise.sets.map((set, index) => (
-                    <div key={`${exercise.id}-${index}`} className="rounded-lg bg-black/[0.035] px-2.5 py-2 text-[11px] dark:bg-white/[0.04]">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[color:var(--muted)]">{set.setNumber ?? index + 1}세트</span>
-                        <span className="font-semibold tabular">{formatStrengthSet(set)}</span>
+            {exercises.map((exercise) => {
+              const exerciseNote = nonRedundantExerciseNote(
+                exercise.notes,
+                exercise.sets.map((set) => set.notes),
+              );
+
+              return (
+                <section key={exercise.id} className="rounded-xl border border-black/6 p-3.5 dark:border-white/6">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-sm font-semibold">{exercise.name}</h2>
+                    <span className="text-[10px] text-[color:var(--muted)] tabular">{exercise.sets.length}세트 · {Math.round(calculateExerciseVolume(exercise)).toLocaleString()}kg</span>
+                  </div>
+                  <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                    {exercise.sets.map((set, index) => (
+                      <div key={`${exercise.id}-${index}`} className="rounded-lg bg-black/[0.035] px-2.5 py-2 text-[11px] dark:bg-white/[0.04]">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[color:var(--muted)]">{set.setNumber ?? index + 1}세트</span>
+                          <span className="font-semibold tabular">{formatStrengthSet(set)}</span>
+                        </div>
+                        {set.notes && <p className="mt-1 text-[10px] text-[color:var(--muted)]">{set.notes}</p>}
                       </div>
-                      {set.notes && <p className="mt-1 text-[10px] text-[color:var(--muted)]">{set.notes}</p>}
-                    </div>
-                  ))}
-                </div>
-                {exercise.notes && <p className="mt-2 text-[11px] leading-relaxed text-[color:var(--muted-foreground)]">{exercise.notes}</p>}
-              </section>
-            ))}
+                    ))}
+                  </div>
+                  {exerciseNote && <p className="mt-2 text-[11px] leading-relaxed text-[color:var(--muted-foreground)]">{exerciseNote}</p>}
+                </section>
+              );
+            })}
             {cardioExercises.map((exercise) => (
               <section key={exercise.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-black/6 p-3.5 dark:border-white/6">
-                <h2 className="text-sm font-semibold">{exercise.name}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold">{exercise.name}</h2>
+                  <span className="rounded-full bg-[var(--color-sage-500)]/10 px-2 py-0.5 text-[9px] font-semibold text-[var(--color-sage-600)] dark:text-[var(--color-sage-400)]">
+                    {ACTIVITY_TYPE_LABEL[exercise.activityType]}
+                  </span>
+                </div>
                 <span className="text-xs text-[color:var(--muted-foreground)] tabular">{summarizeCardio(exercise)}</span>
               </section>
             ))}

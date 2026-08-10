@@ -7,15 +7,24 @@ GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 �
 자유서술 메모만 저장하지 말고, 근력운동은 `exercises[].sets[]`를 반드시 채운다.
 
 기존 자동화가 사용하는 `strengthExercises[].exerciseName` + `sets[]` 구조도 앱에서 동일하게
-정규화해 표시한다. 유산소는 `cardioExercises[]`의 `durationMin`, `speedKmh`, `distanceKm`,
-`inclinePercent`를 읽는다. 즉 기존 자동화를 즉시 중단할 필요는 없지만, 두 구조 중 하나에는
-반드시 실제 세트 배열이 있어야 한다.
+정규화해 표시한다. 시간 기반 활동은 기존 호환성을 위해 `cardioExercises[]`에 저장하되
+`activityType`을 `cardio`, `stretching`, `mobility` 중 하나로 지정한다. 기존 기록처럼
+`activityType`이 없으면 운동명을 기준으로 추론한다. 시간·속도·거리·경사도는
+`durationMin`, `speedKmh`, `distanceKm`, `inclinePercent`를 사용한다.
+
+전체 운동시간은 `duration`에 저장한다. 시작·종료 시각이 있으면 `startedAt`, `endedAt`을
+함께 저장하고, 추정한 시간이라면 `durationEstimated: true`로 표시한다. `duration`이 없을
+때만 시작·종료 시각 또는 시간 기반 활동의 합계로 화면 표시 시간을 계산한다. 근력운동은
+두 지원 구조 중 하나에 반드시 실제 세트 배열이 있어야 한다.
 
 ```json
 {
   "userId": "personal-user",
   "date": "2026-07-21",
   "duration": 60,
+  "durationEstimated": false,
+  "startedAt": "18:05",
+  "endedAt": "19:05",
   "type": "헬스",
   "category": "personal",
   "intensity": "moderate",
@@ -37,6 +46,19 @@ GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 �
         { "weightKg": 35, "reps": 10 },
         { "weightKg": 35, "reps": 10 }
       ]
+    }
+  ],
+  "cardioExercises": [
+    {
+      "exerciseName": "러닝머신 걷기",
+      "activityType": "cardio",
+      "durationMin": 30,
+      "speedKmh": 4.8
+    },
+    {
+      "exerciseName": "목·허리 스트레칭",
+      "activityType": "stretching",
+      "durationMin": 20
     }
   ],
   "caloriesBurned": 280,

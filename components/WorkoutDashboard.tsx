@@ -43,6 +43,7 @@ import {
   summarizeSets,
   totalWorkoutSets,
 } from "@/lib/workoutCalculations";
+import { workoutDurationDisplay } from "@/lib/workoutPresentation";
 import { Card } from "./SummaryCards";
 
 interface Props {
@@ -377,6 +378,7 @@ function RecentWorkout({
   const detail = workout.lessonContent?.trim() || workout.notes?.trim();
   const exercises = workout.exercises ?? [];
   const cardioExercises = workout.cardioExercises ?? [];
+  const durationDisplay = workoutDurationDisplay(workout);
 
   return (
     <button
@@ -410,7 +412,7 @@ function RecentWorkout({
               <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-[color:var(--muted)] tabular">
                 <span>{parsedDate ? format(parsedDate, "M.d (E)", { locale: ko }) : workout.date}</span>
                 <span>
-                  {Number(workout.duration) || 0}분{workout.durationDerivedFromCardio ? "(유산소 기록)" : ""}
+                  {durationDisplay.value}{durationDisplay.suffix}
                 </span>
                 {workout.caloriesBurned != null && <span>{workout.caloriesBurned} kcal</span>}
               </div>
