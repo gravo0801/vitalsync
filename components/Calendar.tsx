@@ -39,38 +39,40 @@ export default function Calendar({ weights, meals, workouts, medications = [], o
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex flex-col min-[420px]:flex-row min-[420px]:items-center justify-between gap-3 mb-5">
         <h3 className="text-base font-semibold tracking-tight">
           월별 <span className="serif-italic">기록</span>
         </h3>
-        <div className="flex items-center gap-1 text-sm">
+        <div className="flex w-full min-[420px]:w-auto items-center justify-between min-[420px]:justify-start gap-1 text-sm">
           <button
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+            className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+            aria-label="이전 달"
           >
-            <ChevronLeft size={14} />
+            <ChevronLeft size={15} />
           </button>
-          <span className="font-medium w-28 text-center text-sm tabular">
+          <span className="font-medium min-w-28 text-center text-sm tabular">
             {format(currentMonth, "yyyy년 MM월", { locale: ko })}
           </span>
           <button
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+            className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+            aria-label="다음 달"
           >
-            <ChevronRight size={14} />
+            <ChevronRight size={15} />
           </button>
         </div>
       </div>
 
       {/* 범례 */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-4 text-[11px] text-[color:var(--muted-foreground)]">
+      <div className="flex flex-wrap items-center gap-x-3 min-[420px]:gap-x-4 gap-y-1.5 mb-4 text-[11px] text-[color:var(--muted-foreground)]">
         <LegendItem color="var(--color-terra-500)" label="식사" />
         <LegendItem color="var(--color-sage-500)" label="개인 운동" />
         <LegendItem color="var(--color-wine-500)" label="PT" />
         <LegendItem color="var(--color-mauve-500)" label="Mounjaro" />
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center">
+      <div className="grid grid-cols-7 gap-0.5 min-[420px]:gap-1 text-center">
         {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
           <div
             key={d}
@@ -95,7 +97,7 @@ export default function Calendar({ weights, meals, workouts, medications = [], o
               key={dateStr}
               onClick={() => onSelectDate(dateStr)}
               className={`
-                relative h-16 flex flex-col items-center justify-center rounded-lg
+                relative h-14 min-[420px]:h-16 flex flex-col items-center justify-center rounded-lg
                 hover:bg-black/4 dark:hover:bg-white/5 transition-colors
                 ${today ? "bg-[var(--color-sage-500)]/8 ring-1 ring-[var(--color-sage-500)]/40" : ""}
               `}
