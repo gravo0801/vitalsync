@@ -1,5 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+
+import { workoutApiErrorResponse } from "@/lib/workoutApiResponses";
 
 const WORKOUT_API_KEY_SHA256 =
   "7df89e1a0792dbdbbd23f324f9e1263f70e3ba0638f85e424a6f4de32c8d5fb5";
@@ -17,14 +19,9 @@ export function isWorkoutApiAuthorized(request: NextRequest): boolean {
 }
 
 export function workoutApiUnauthorizedResponse() {
-  return NextResponse.json(
-    {
-      ok: false,
-      error: {
-        code: "UNAUTHORIZED",
-        message: "Authorization: Bearer <VitalSync workout API key> is required.",
-      },
-    },
-    { status: 401 },
+  return workoutApiErrorResponse(
+    "UNAUTHORIZED",
+    "Authorization: Bearer <VitalSync workout API key> is required.",
+    401,
   );
 }

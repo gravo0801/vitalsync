@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isWorkoutApiAuthorized, workoutApiUnauthorizedResponse } from "@/lib/workoutApiAuth";
+import { workoutApiErrorResponse } from "@/lib/workoutApiResponses";
 import { listWorkoutRecords } from "@/lib/workoutRepository";
 
 export const dynamic = "force-dynamic";
@@ -39,9 +40,10 @@ export async function GET(request: NextRequest) {
     });
 
     if (requestedKey && history.length === 0) {
-      return NextResponse.json(
-        { ok: false, error: "exercise_not_found", message: `운동 종목 '${requestedName}'의 기록이 없습니다.` },
-        { status: 404 },
+      return workoutApiErrorResponse(
+        "NOT_FOUND",
+        `운동 종목 '${requestedName}'의 기록이 없습니다.`,
+        404,
       );
     }
 
@@ -54,9 +56,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("[GET /api/workouts/exercises/recent]", error);
-    return NextResponse.json(
-      { ok: false, error: "exercise_history_read_failed", message: "종목별 최근 기록을 불러오지 못했습니다." },
-      { status: 500 },
+    return workoutApiErrorResponse(
+      "INTERNAL_ERROR",
+      "종목별 최근 기록을 불러오지 못했습니다.",
+      500,
     );
   }
 }

@@ -1,6 +1,6 @@
 # GPT 운동 자동화 저장 규격
 
-> 모든 `/api/workouts` 요청에는 GPT Action에 등록한
+> 모든 운동 API 요청에는 GPT Action에 등록한
 > `Authorization: Bearer <VitalSync workout API key>` 헤더가 필요하다.
 
 GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 때 아래 구조를 사용한다.
@@ -83,12 +83,15 @@ GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 �
 
 ## GPT Action API
 
-- 최근 5개 세션: `GET /api/workouts/recent?limit=5`
+- GPT 최근 5개 세션: `POST /api/gpt/workout/context?limit=5` (`GET`도 호환)
+- GPT 확정 운동 저장: `POST /api/gpt/workout/confirmed`
+- 내부/기존 최근 5개 세션: `GET /api/workouts/recent?limit=5`
 - 특정 종목 최근 기록: `GET /api/workouts/exercises/recent?name=Rear%20deltoid&limit=5`
 - workoutId 상세: `GET /api/workouts/{workoutId}`
-- 확정 운동 저장: `POST /api/workouts`
+- 내부/기존 확정 운동 저장: `POST /api/workouts`
 - Action 스키마: `/vitalsync-workout-openapi.yaml`
 
-모든 API 오류는 Next.js HTML 오류 페이지가 아니라 JSON의 `error`, `message` 필드로 반환한다.
+모든 GPT API 오류는 Next.js HTML 오류 페이지가 아니라
+`{ "ok": false, "error": { "code": "...", "message": "..." } }` JSON으로 반환한다.
 `POST /api/workouts`는 `confirmedByUser: true`를 필수로 확인하며 `Idempotency-Key` 헤더 또는
-본문의 `idempotencyKey`를 이용해 같은 운동의 중복 생성을 방지한다.
+본문의 `idempotencyKey`를 이용해 같은 운동의 중복 생성을 방지하고 `duplicate` 상태를 반환한다.

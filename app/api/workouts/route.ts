@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isWorkoutApiAuthorized, workoutApiUnauthorizedResponse } from "@/lib/workoutApiAuth";
+import { workoutApiErrorResponse } from "@/lib/workoutApiResponses";
 import {
   listWorkoutRecords,
   saveConfirmedWorkout,
@@ -28,9 +29,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("[GET /api/workouts]", error);
-    return NextResponse.json(
-      { ok: false, error: "workout_read_failed", message: "운동 기록을 불러오지 못했습니다." },
-      { status: 500 },
+    return workoutApiErrorResponse(
+      "INTERNAL_ERROR",
+      "운동 기록을 불러오지 못했습니다.",
+      500,
     );
   }
 }
@@ -58,15 +60,12 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid workout payload";
-    const validationError = /confirmedByUser|date must/.test(message);
+    const validationError = error instanceof SyntaxError || /confirmedByUser|date must/.test(message);
     console.error("[POST /api/workouts]", error);
-    return NextResponse.json(
-      {
-        ok: false,
-        error: validationError ? "invalid_workout_payload" : "workout_save_failed",
-        message,
-      },
-      { status: validationError ? 400 : 500 },
+    return workoutApiErrorResponse(
+      validationError ? "VALIDATION_ERROR" : "INTERNAL_ERROR",
+      validationError ? message : "운동 기록을 저장하지 못했습니다.",
+      validationError ? 400 : 500,
     );
   }
 }

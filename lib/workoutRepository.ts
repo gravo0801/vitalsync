@@ -194,7 +194,7 @@ export async function getWorkoutRecord(workoutId: string): Promise<WorkoutRecord
 export async function saveConfirmedWorkout(
   payload: WorkoutSavePayload,
   requestedIdempotencyKey?: string | null,
-): Promise<{ status: "created" | "existing"; workout: WorkoutRecord }> {
+): Promise<{ status: "created" | "duplicate"; workout: WorkoutRecord }> {
   if (payload.confirmedByUser !== true) {
     throw new Error("confirmedByUser must be true before saving a workout");
   }
@@ -210,7 +210,7 @@ export async function saveConfirmedWorkout(
   if (existing) {
     const existingData = decodeFirestoreFields(existing.fields ?? {});
     if (existingData.userId !== PERSONAL_USER_ID) throw new Error("workoutId is not available");
-    return { status: "existing", workout: normalizeWorkoutRecord(workoutId, existingData) };
+    return { status: "duplicate", workout: normalizeWorkoutRecord(workoutId, existingData) };
   }
 
   const record = {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isWorkoutApiAuthorized, workoutApiUnauthorizedResponse } from "@/lib/workoutApiAuth";
+import { workoutApiErrorResponse } from "@/lib/workoutApiResponses";
 import { listWorkoutRecords, workoutApiPayload } from "@/lib/workoutRepository";
 
 export const dynamic = "force-dynamic";
@@ -42,9 +43,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("[GET /api/workouts/recent]", error);
-    return NextResponse.json(
-      { ok: false, error: "recent_workout_read_failed", message: "최근 운동 기록을 불러오지 못했습니다." },
-      { status: 500 },
+    return workoutApiErrorResponse(
+      "INTERNAL_ERROR",
+      "최근 운동 기록을 불러오지 못했습니다.",
+      500,
     );
   }
 }
