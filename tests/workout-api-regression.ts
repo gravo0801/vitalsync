@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { NextRequest } from "next/server";
 
@@ -41,6 +42,20 @@ async function check(name: string, test: () => Promise<void>) {
 }
 
 async function main() {
+  await check("OpenAPI response objects declare properties", async () => {
+    const schema = readFileSync(new URL("../public/vitalsync-workout-openapi.yaml", import.meta.url), "utf8");
+    assert.doesNotMatch(schema, /type: object\r?\n\s+additionalProperties: true/);
+    for (const responseSchema of [
+      "WorkoutContextResponse",
+      "ExerciseHistoryResponse",
+      "WorkoutDetailResponse",
+      "WorkoutListResponse",
+      "WorkoutSaveResponse",
+    ]) {
+      assert.match(schema, new RegExp(`\\$ref: \"#/components/schemas/${responseSchema}\"`));
+    }
+  });
+
   await check("bearer authentication uses the configured environment key", async () => {
     const previousKey = process.env.VITALSYNC_GPT_ACTION_KEY;
     process.env.VITALSYNC_GPT_ACTION_KEY = "test-only-action-key";
@@ -223,7 +238,7 @@ async function main() {
     }
   });
 
-  console.log(`PASS ${passed}/12 workout API regression checks`);
+  console.log(`PASS ${passed}/13 workout API regression checks`);
 }
 
 main().catch((error) => {
