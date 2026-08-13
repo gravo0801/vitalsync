@@ -12,7 +12,7 @@ function parseLimit(request: NextRequest): number {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse();
+  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse(request);
 
   try {
     const workouts = await listWorkoutRecords();

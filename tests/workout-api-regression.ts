@@ -11,7 +11,7 @@ import {
 } from "@/app/api/gpt/workout/confirmed/route";
 import { POST as legacySaveWorkoutRoute } from "@/app/api/gpt/workouts/route";
 import { POST as legacyGetWorkoutContext } from "@/app/api/gpt/workouts/context/route";
-import { isWorkoutApiAuthorized } from "@/lib/workoutApiAuth";
+import { getWorkoutApiAuthResult, isWorkoutApiAuthorized } from "@/lib/workoutApiAuth";
 import { saveConfirmedWorkout } from "@/lib/workoutRepository";
 
 const workoutId = "gpt-2026-08-12-b1371d705da171e2";
@@ -60,6 +60,28 @@ async function main() {
           }),
         ),
         false,
+      );
+    } finally {
+      if (previousKey === undefined) delete process.env.VITALSYNC_GPT_ACTION_KEY;
+      else process.env.VITALSYNC_GPT_ACTION_KEY = previousKey;
+    }
+  });
+
+  await check("authentication diagnostics distinguish missing and mismatched keys", async () => {
+    const previousKey = process.env.VITALSYNC_GPT_ACTION_KEY;
+    process.env.VITALSYNC_GPT_ACTION_KEY = "test-only-action-key";
+    try {
+      assert.deepEqual(
+        getWorkoutApiAuthResult(new NextRequest("http://localhost/api/gpt/workouts")),
+        { ok: false, reason: "missing_header" },
+      );
+      assert.deepEqual(
+        getWorkoutApiAuthResult(
+          new NextRequest("http://localhost/api/gpt/workouts", {
+            headers: { authorization: "Bearer wrong-key" },
+          }),
+        ),
+        { ok: false, reason: "key_mismatch" },
       );
     } finally {
       if (previousKey === undefined) delete process.env.VITALSYNC_GPT_ACTION_KEY;
@@ -201,7 +223,7 @@ async function main() {
     }
   });
 
-  console.log(`PASS ${passed}/11 workout API regression checks`);
+  console.log(`PASS ${passed}/12 workout API regression checks`);
 }
 
 main().catch((error) => {

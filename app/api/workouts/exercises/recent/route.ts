@@ -11,7 +11,7 @@ function normalizedName(value: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse();
+  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse(request);
 
   try {
     const requestedName = request.nextUrl.searchParams.get("name")?.trim() ?? "";

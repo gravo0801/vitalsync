@@ -10,7 +10,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ workoutId: string }> },
 ) {
-  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse();
+  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse(request);
 
   try {
     const { workoutId } = await params;
