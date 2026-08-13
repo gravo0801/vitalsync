@@ -17,7 +17,7 @@ function limitFrom(request: NextRequest): number {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse();
+  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse(request);
 
   try {
     const workouts = await listWorkoutRecords();
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse();
+  if (!isWorkoutApiAuthorized(request)) return workoutApiUnauthorizedResponse(request);
 
   try {
     const payload = (await request.json()) as WorkoutSavePayload;
