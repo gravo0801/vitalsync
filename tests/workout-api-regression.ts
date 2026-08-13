@@ -3,11 +3,14 @@ import assert from "node:assert/strict";
 import { NextRequest } from "next/server";
 
 import { GET as unknownGptRoute } from "@/app/api/gpt/[...path]/route";
+import { GET as legacyOpenApiSchema } from "@/app/api/gpt/openapi.json/route";
 import { POST as getWorkoutContext } from "@/app/api/gpt/workout/context/route";
 import {
   GET as invalidSaveMethod,
   POST as saveWorkoutRoute,
 } from "@/app/api/gpt/workout/confirmed/route";
+import { POST as legacySaveWorkoutRoute } from "@/app/api/gpt/workouts/route";
+import { POST as legacyGetWorkoutContext } from "@/app/api/gpt/workouts/context/route";
 import { saveConfirmedWorkout } from "@/lib/workoutRepository";
 
 const workoutId = "gpt-2026-08-12-b1371d705da171e2";
@@ -63,6 +66,37 @@ async function main() {
     const response = invalidSaveMethod();
     assert.equal(response.status, 405);
     assert.equal((await response.json()).error.code, "METHOD_NOT_ALLOWED");
+  });
+
+  await check("plural context route remains compatible", async () => {
+    const response = await legacyGetWorkoutContext(
+      new NextRequest("http://localhost/api/gpt/workouts/context", { method: "POST" }),
+    );
+    assert.equal(response.status, 401);
+    assert.equal((await response.json()).error.code, "UNAUTHORIZED");
+  });
+
+  await check("plural save route remains compatible", async () => {
+    const response = await legacySaveWorkoutRoute(
+      new NextRequest("http://localhost/api/gpt/workouts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      }),
+    );
+    assert.equal(response.status, 401);
+    assert.equal((await response.json()).error.code, "UNAUTHORIZED");
+  });
+
+  await check("legacy schema URL redirects to the current schema", async () => {
+    const response = legacyOpenApiSchema(
+      new NextRequest("https://vitalsync-sigma.vercel.app/api/gpt/openapi.json"),
+    );
+    assert.equal(response.status, 307);
+    assert.equal(
+      response.headers.get("location"),
+      "https://vitalsync-sigma.vercel.app/vitalsync-workout-openapi.yaml",
+    );
   });
 
   await check("unknown GPT route returns JSON 404", async () => {
@@ -140,7 +174,7 @@ async function main() {
     }
   });
 
-  console.log(`PASS ${passed}/7 workout API regression checks`);
+  console.log(`PASS ${passed}/10 workout API regression checks`);
 }
 
 main().catch((error) => {

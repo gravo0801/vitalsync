@@ -83,13 +83,14 @@ GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 �
 
 ## GPT Action API
 
-- GPT 최근 5개 세션: `POST /api/gpt/workout/context?limit=5` (`GET`도 호환)
-- GPT 확정 운동 저장: `POST /api/gpt/workout/confirmed`
+- GPT 최근 5개 세션: `POST /api/gpt/workouts/context?limit=5` (`GET`도 호환)
+- GPT 확정 운동 저장: `POST /api/gpt/workouts`
+- 이전 단수형 경로인 `/api/gpt/workout/context`, `/api/gpt/workout/confirmed`도 호환을 위해 유지한다.
 - 내부/기존 최근 5개 세션: `GET /api/workouts/recent?limit=5`
 - 특정 종목 최근 기록: `GET /api/workouts/exercises/recent?name=Rear%20deltoid&limit=5`
 - workoutId 상세: `GET /api/workouts/{workoutId}`
 - 내부/기존 확정 운동 저장: `POST /api/workouts`
-- Action 스키마: `/vitalsync-workout-openapi.yaml`
+- Action 스키마: `/vitalsync-workout-openapi.yaml` (`/api/gpt/openapi.json`도 같은 스키마로 연결)
 
 모든 GPT API 오류는 Next.js HTML 오류 페이지가 아니라
 `{ "ok": false, "error": { "code": "...", "message": "..." } }` JSON으로 반환한다.
