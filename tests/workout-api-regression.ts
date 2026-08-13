@@ -13,27 +13,14 @@ import {
 import { POST as legacySaveWorkoutRoute } from "@/app/api/gpt/workouts/route";
 import { POST as legacyGetWorkoutContext } from "@/app/api/gpt/workouts/context/route";
 import { getWorkoutApiAuthResult, isWorkoutApiAuthorized } from "@/lib/workoutApiAuth";
-import { saveConfirmedWorkout } from "@/lib/workoutRepository";
+import {
+  FirestoreRestWorkoutSaveStore,
+  saveConfirmedWorkout,
+  type WorkoutSaveStore,
+} from "@/lib/workoutRepository";
 
 const workoutId = "gpt-2026-08-12-b1371d705da171e2";
 let passed = 0;
-
-function firestoreDocument() {
-  return {
-    name: `projects/vitalsync-8c169/databases/(default)/documents/workouts/${workoutId}`,
-    fields: {
-      userId: { stringValue: "personal-user" },
-      date: { stringValue: "2026-08-12" },
-      type: { stringValue: "근력" },
-      category: { stringValue: "personal" },
-      duration: { nullValue: null },
-      notes: { stringValue: "API regression test" },
-      exercises: { arrayValue: { values: [] } },
-      strengthExercises: { arrayValue: { values: [] } },
-      cardioExercises: { arrayValue: { values: [] } },
-    },
-  };
-}
 
 async function check(name: string, test: () => Promise<void>) {
   await test();
@@ -173,72 +160,97 @@ async function main() {
   });
 
   await check("new idempotency key creates a Firestore workout", async () => {
+    let savedId = "";
+    const store: WorkoutSaveStore = {
+      async createOrGet(id, record) {
+        savedId = id;
+        return { status: "created", data: record };
+      },
+    };
+    const result = await saveConfirmedWorkout(
+      {
+        confirmedByUser: true,
+        date: "2026-08-12",
+        type: "근력",
+        notes: "API regression test",
+      },
+      "workout-api-regression-key",
+      store,
+    );
+    assert.equal(result.status, "created");
+    assert.equal(savedId, workoutId);
+  });
+
+  await check("workout writes use service-account authorization and an atomic create precondition", async () => {
     const originalFetch = globalThis.fetch;
     const calls: Array<[RequestInfo | URL, RequestInit | undefined]> = [];
-    const responses = [
-      new Response(null, { status: 404 }),
-      Response.json(firestoreDocument(), { status: 200 }),
-    ];
     globalThis.fetch = async (input, init) => {
       calls.push([input, init]);
-      return responses.shift() ?? new Response(null, { status: 500 });
+      if (calls.length === 1) return new Response(null, { status: 404 });
+      return Response.json({
+        name: `projects/vitalsync-8c169/databases/(default)/documents/workouts/${workoutId}`,
+        fields: {
+          userId: { stringValue: "personal-user" },
+          date: { stringValue: "2026-08-12" },
+          type: { stringValue: "근력" },
+        },
+      });
     };
     try {
+      const store = new FirestoreRestWorkoutSaveStore(async () => "test-service-account-token");
       const result = await saveConfirmedWorkout(
-        {
-          confirmedByUser: true,
-          date: "2026-08-12",
-          type: "근력",
-          notes: "API regression test",
-        },
+        { confirmedByUser: true, date: "2026-08-12", type: "근력" },
         "workout-api-regression-key",
+        store,
       );
       assert.equal(result.status, "created");
       assert.equal(calls.length, 2);
-      assert.equal(calls[1]?.[1]?.method, "PATCH");
+      for (const [input, init] of calls) {
+        assert.equal(new Headers(init?.headers).get("authorization"), "Bearer test-service-account-token");
+        assert.doesNotMatch(String(input), /[?&]key=/);
+      }
+      assert.match(String(calls[1]?.[0]), /currentDocument\.exists=false/);
     } finally {
       globalThis.fetch = originalFetch;
     }
   });
 
   await check("existing idempotency key returns duplicate without writing", async () => {
-    const originalFetch = globalThis.fetch;
     let calls = 0;
-    globalThis.fetch = async () => {
-      calls += 1;
-      return Response.json(firestoreDocument(), { status: 200 });
+    const store: WorkoutSaveStore = {
+      async createOrGet() {
+        calls += 1;
+        return {
+          status: "duplicate",
+          data: { userId: "personal-user", date: "2026-08-12", type: "근력" },
+        };
+      },
     };
-    try {
-      const result = await saveConfirmedWorkout(
-        { confirmedByUser: true, date: "2026-08-12", type: "근력" },
-        "workout-api-regression-key",
-      );
-      assert.equal(result.status, "duplicate");
-      assert.equal(calls, 1);
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
+    const result = await saveConfirmedWorkout(
+      { confirmedByUser: true, date: "2026-08-12", type: "근력" },
+      "workout-api-regression-key",
+      store,
+    );
+    assert.equal(result.status, "duplicate");
+    assert.equal(calls, 1);
   });
 
   await check("unconfirmed workout is rejected before Firestore access", async () => {
-    const originalFetch = globalThis.fetch;
     let calls = 0;
-    globalThis.fetch = async () => {
-      calls += 1;
-      return new Response(null, { status: 500 });
+    const store: WorkoutSaveStore = {
+      async createOrGet() {
+        calls += 1;
+        throw new Error("store should not be called");
+      },
     };
-    try {
-      await assert.rejects(
-        saveConfirmedWorkout({ date: "2026-08-12", confirmedByUser: false }),
-        /confirmedByUser must be true/,
-      );
-      assert.equal(calls, 0);
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
+    await assert.rejects(
+      saveConfirmedWorkout({ date: "2026-08-12", confirmedByUser: false }, null, store),
+      /confirmedByUser must be true/,
+    );
+    assert.equal(calls, 0);
   });
 
-  console.log(`PASS ${passed}/13 workout API regression checks`);
+  console.log(`PASS ${passed}/14 workout API regression checks`);
 }
 
 main().catch((error) => {

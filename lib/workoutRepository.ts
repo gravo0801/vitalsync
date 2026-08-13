@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { firebaseConfig, PERSONAL_USER_ID } from "@/lib/firebaseConfig";
+import { getFirestoreAdminAccessToken } from "@/lib/googleServiceAccount";
 import { normalizeWorkoutRecord } from "@/lib/workoutNormalization";
 import type { WorkoutRecord } from "@/types";
 
@@ -74,17 +75,29 @@ function workoutIdFromName(name: string): string {
   return name.split("/").pop() ?? "";
 }
 
-async function firestoreRequest(url: string, init?: RequestInit): Promise<Response> {
-  return fetch(`${url}${url.includes("?") ? "&" : "?"}key=${encodeURIComponent(FIRESTORE_API_KEY)}`, {
+async function firestoreRequest(url: string, init?: RequestInit, bearerToken?: string): Promise<Response> {
+  const requestUrl = bearerToken
+    ? url
+    : `${url}${url.includes("?") ? "&" : "?"}key=${encodeURIComponent(FIRESTORE_API_KEY)}`;
+  return fetch(requestUrl, {
     ...init,
     cache: "no-store",
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "content-type": "application/json",
+      ...(bearerToken ? { authorization: `Bearer ${bearerToken}` } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
 }
 
-async function getFirestoreDocument(workoutId: string): Promise<FirestoreRestDocument | null> {
+async function getFirestoreDocument(
+  workoutId: string,
+  bearerToken?: string,
+): Promise<FirestoreRestDocument | null> {
   const response = await firestoreRequest(
     `${FIRESTORE_DOCUMENTS_URL}/workouts/${encodeURIComponent(workoutId)}`,
+    undefined,
+    bearerToken,
   );
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Firestore read failed (${response.status})`);
@@ -124,6 +137,50 @@ export interface WorkoutSavePayload {
   notes?: string;
   source?: string;
   schemaVersion?: number;
+}
+
+export interface WorkoutSaveStore {
+  createOrGet(
+    workoutId: string,
+    record: Record<string, unknown>,
+  ): Promise<{ status: "created" | "duplicate"; data: Record<string, unknown> }>;
+}
+
+export class FirestoreRestWorkoutSaveStore implements WorkoutSaveStore {
+  private readonly accessTokenProvider: () => Promise<string>;
+
+  constructor(accessTokenProvider: () => Promise<string> = getFirestoreAdminAccessToken) {
+    this.accessTokenProvider = accessTokenProvider;
+  }
+
+  async createOrGet(workoutId: string, record: Record<string, unknown>) {
+    const accessToken = await this.accessTokenProvider();
+    const existing = await getFirestoreDocument(workoutId, accessToken);
+    if (existing) {
+      const data = decodeFirestoreFields(existing.fields ?? {});
+      if (data.userId !== PERSONAL_USER_ID) throw new Error("workoutId is not available");
+      return { status: "duplicate" as const, data };
+    }
+
+    const response = await firestoreRequest(
+      `${FIRESTORE_DOCUMENTS_URL}/workouts/${encodeURIComponent(workoutId)}?currentDocument.exists=false`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ fields: encodeFirestoreFields(record) }),
+      },
+      accessToken,
+    );
+    if (response.status === 409 || response.status === 412) {
+      const duplicate = await getFirestoreDocument(workoutId, accessToken);
+      if (!duplicate) throw new Error(`Firestore idempotency check failed (${response.status})`);
+      const data = decodeFirestoreFields(duplicate.fields ?? {});
+      if (data.userId !== PERSONAL_USER_ID) throw new Error("workoutId is not available");
+      return { status: "duplicate" as const, data };
+    }
+    if (!response.ok) throw new Error(`Firestore save failed (${response.status})`);
+    const saved = await response.json() as FirestoreRestDocument;
+    return { status: "created" as const, data: decodeFirestoreFields(saved.fields ?? {}) };
+  }
 }
 
 function isDate(value: unknown): value is string {
@@ -194,6 +251,7 @@ export async function getWorkoutRecord(workoutId: string): Promise<WorkoutRecord
 export async function saveConfirmedWorkout(
   payload: WorkoutSavePayload,
   requestedIdempotencyKey?: string | null,
+  store: WorkoutSaveStore = new FirestoreRestWorkoutSaveStore(),
 ): Promise<{ status: "created" | "duplicate"; workout: WorkoutRecord }> {
   if (payload.confirmedByUser !== true) {
     throw new Error("confirmedByUser must be true before saving a workout");
@@ -205,13 +263,6 @@ export async function saveConfirmedWorkout(
   const idempotencyKey = stableKey(payload, requestedIdempotencyKey);
   const hash = createHash("sha256").update(idempotencyKey).digest("hex").slice(0, 16);
   const workoutId = safeWorkoutId(payload.workoutId) ?? `gpt-${payload.date}-${hash}`;
-  const existing = await getFirestoreDocument(workoutId);
-
-  if (existing) {
-    const existingData = decodeFirestoreFields(existing.fields ?? {});
-    if (existingData.userId !== PERSONAL_USER_ID) throw new Error("workoutId is not available");
-    return { status: "duplicate", workout: normalizeWorkoutRecord(workoutId, existingData) };
-  }
 
   const record = {
     userId: PERSONAL_USER_ID,
@@ -243,16 +294,11 @@ export async function saveConfirmedWorkout(
     createdAt: new Date(),
   };
 
-  const response = await firestoreRequest(
-    `${FIRESTORE_DOCUMENTS_URL}/workouts/${encodeURIComponent(workoutId)}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ fields: encodeFirestoreFields(record) }),
-    },
-  );
-  if (!response.ok) throw new Error(`Firestore save failed (${response.status})`);
-  const saved = (await response.json()) as FirestoreRestDocument;
-  return { status: "created", workout: normalizeRestDocument(saved) };
+  const result = await store.createOrGet(workoutId, record);
+  return {
+    status: result.status,
+    workout: normalizeWorkoutRecord(workoutId, result.data),
+  };
 }
 
 export function workoutApiPayload(workout: WorkoutRecord, origin: string) {
