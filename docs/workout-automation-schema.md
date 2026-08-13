@@ -2,6 +2,7 @@
 
 > 모든 운동 API 요청에는 GPT Action에 등록한
 > `Authorization: Bearer <VitalSync workout API key>` 헤더가 필요하다.
+> 서버는 Production 환경변수 `VITALSYNC_GPT_ACTION_KEY`와 Bearer 값을 비교한다.
 
 GPT 자동화가 운동 기록을 Firestore `workouts` 컬렉션에 저장할 때 아래 구조를 사용한다.
 자유서술 메모만 저장하지 말고, 근력운동은 `exercises[].sets[]`를 반드시 채운다.

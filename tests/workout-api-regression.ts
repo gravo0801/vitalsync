@@ -11,6 +11,7 @@ import {
 } from "@/app/api/gpt/workout/confirmed/route";
 import { POST as legacySaveWorkoutRoute } from "@/app/api/gpt/workouts/route";
 import { POST as legacyGetWorkoutContext } from "@/app/api/gpt/workouts/context/route";
+import { isWorkoutApiAuthorized } from "@/lib/workoutApiAuth";
 import { saveConfirmedWorkout } from "@/lib/workoutRepository";
 
 const workoutId = "gpt-2026-08-12-b1371d705da171e2";
@@ -40,6 +41,32 @@ async function check(name: string, test: () => Promise<void>) {
 }
 
 async function main() {
+  await check("bearer authentication uses the configured environment key", async () => {
+    const previousKey = process.env.VITALSYNC_GPT_ACTION_KEY;
+    process.env.VITALSYNC_GPT_ACTION_KEY = "test-only-action-key";
+    try {
+      assert.equal(
+        isWorkoutApiAuthorized(
+          new NextRequest("http://localhost/api/gpt/workouts", {
+            headers: { authorization: "Bearer test-only-action-key" },
+          }),
+        ),
+        true,
+      );
+      assert.equal(
+        isWorkoutApiAuthorized(
+          new NextRequest("http://localhost/api/gpt/workouts", {
+            headers: { authorization: "Bearer wrong-key" },
+          }),
+        ),
+        false,
+      );
+    } finally {
+      if (previousKey === undefined) delete process.env.VITALSYNC_GPT_ACTION_KEY;
+      else process.env.VITALSYNC_GPT_ACTION_KEY = previousKey;
+    }
+  });
+
   await check("context returns JSON 401 without bearer token", async () => {
     const response = await getWorkoutContext(
       new NextRequest("http://localhost/api/gpt/workout/context", { method: "POST" }),
@@ -174,7 +201,7 @@ async function main() {
     }
   });
 
-  console.log(`PASS ${passed}/10 workout API regression checks`);
+  console.log(`PASS ${passed}/11 workout API regression checks`);
 }
 
 main().catch((error) => {
