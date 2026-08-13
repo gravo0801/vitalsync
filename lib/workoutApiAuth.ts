@@ -3,19 +3,19 @@ import { NextRequest } from "next/server";
 
 import { workoutApiErrorResponse } from "@/lib/workoutApiResponses";
 
-const WORKOUT_API_KEY_SHA256 =
-  "7df89e1a0792dbdbbd23f324f9e1263f70e3ba0638f85e424a6f4de32c8d5fb5";
+function digest(value: string) {
+  return createHash("sha256").update(value).digest();
+}
 
 export function isWorkoutApiAuthorized(request: NextRequest): boolean {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ")) return false;
 
   const token = authorization.slice("Bearer ".length).trim();
-  if (!token) return false;
+  const configuredKey = process.env.VITALSYNC_GPT_ACTION_KEY?.trim();
+  if (!token || !configuredKey) return false;
 
-  const actual = Buffer.from(createHash("sha256").update(token).digest("hex"));
-  const expected = Buffer.from(WORKOUT_API_KEY_SHA256);
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
+  return timingSafeEqual(digest(token), digest(configuredKey));
 }
 
 export function workoutApiUnauthorizedResponse() {
