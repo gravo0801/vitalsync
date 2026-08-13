@@ -26,8 +26,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/WorkoutContextResponse"
         "401":
           description: Bearer 인증 누락 또는 실패
           content:
@@ -63,8 +62,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/ExerciseHistoryResponse"
         "404":
           description: 해당 종목 기록 없음
           content:
@@ -87,8 +85,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/WorkoutDetailResponse"
         "404":
           description: 운동 기록 없음
           content:
@@ -113,8 +110,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/WorkoutListResponse"
   /api/gpt/workouts:
     post:
       operationId: saveConfirmedWorkout
@@ -137,15 +133,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/WorkoutSaveResponse"
         "200":
           description: 동일 idempotency key 기록이 이미 존재하여 duplicate 반환
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/WorkoutSaveResponse"
         "400":
           description: 확정되지 않았거나 잘못된 요청
           content:
@@ -171,6 +165,142 @@ components:
       scheme: bearer
       bearerFormat: VitalSync API key
   schemas:
+    WorkoutSummary:
+      type: object
+      required: [workoutId, date, type, category]
+      properties:
+        workoutId:
+          type: string
+        date:
+          type: string
+        type:
+          type: string
+        category:
+          type: string
+          enum: [personal, PT]
+        duration:
+          type: [number, "null"]
+        caloriesBurned:
+          type: [number, "null"]
+        exercises:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              sets:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StrengthSet"
+        cardioExercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardioExercise"
+        notes:
+          type: string
+        dateUrl:
+          type: string
+        detailUrl:
+          type: string
+      additionalProperties: true
+    RecentExercise:
+      type: object
+      required: [exerciseName, date, workoutId, sets]
+      properties:
+        exerciseName:
+          type: string
+        date:
+          type: string
+        workoutId:
+          type: string
+        sets:
+          type: array
+          items:
+            $ref: "#/components/schemas/StrengthSet"
+        notes:
+          type: string
+        detailUrl:
+          type: string
+      additionalProperties: true
+    WorkoutContextResponse:
+      type: object
+      required: [ok, count, recentSessions, latestExercises]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        count:
+          type: integer
+        recentSessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkoutSummary"
+        latestExercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentExercise"
+    ExerciseHistoryResponse:
+      type: object
+      required: [ok, count]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        exerciseName:
+          type: [string, "null"]
+        count:
+          type: integer
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentExercise"
+        latestExercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentExercise"
+    WorkoutDetailResponse:
+      type: object
+      required: [ok, workout]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        workout:
+          $ref: "#/components/schemas/WorkoutSummary"
+    WorkoutListResponse:
+      type: object
+      required: [ok, count, sessions]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        count:
+          type: integer
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkoutSummary"
+    WorkoutSaveResponse:
+      type: object
+      required: [ok, status, workoutId, date, url, detailUrl, workout]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        status:
+          type: string
+          enum: [created, duplicate]
+        workoutId:
+          type: string
+        date:
+          type: string
+        url:
+          type: string
+        detailUrl:
+          type: string
+        workout:
+          $ref: "#/components/schemas/WorkoutSummary"
     StrengthSet:
       type: object
       required: [setNumber, reps]
