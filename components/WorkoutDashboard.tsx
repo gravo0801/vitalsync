@@ -21,11 +21,13 @@ import {
   ArrowRight,
   CalendarDays,
   Clock3,
+  Download,
   Dumbbell,
   Flame,
   Plus,
   User,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Bar,
   BarChart,
@@ -43,6 +45,7 @@ import {
   summarizeSets,
   totalWorkoutSets,
 } from "@/lib/workoutCalculations";
+import { buildWorkoutCsv } from "@/lib/workoutCsv";
 import { Card } from "./SummaryCards";
 
 interface Props {
@@ -180,6 +183,44 @@ export default function WorkoutDashboard({ workouts, onAddWorkout, onSelectDate 
     0,
   );
 
+  const handleShareCsv = async () => {
+    if (workouts.length === 0) {
+      toast.error("공유할 운동 기록이 없습니다");
+      return;
+    }
+
+    const csv = buildWorkoutCsv(workouts);
+    const dateStamp = format(new Date(), "yyyy-MM-dd");
+    const fileName = `vitalsync-workouts-${dateStamp}.csv`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const file = new File([blob], fileName, { type: blob.type });
+
+    try {
+      if (typeof navigator.share === "function" &&
+          (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+        await navigator.share({
+          title: "VitalSync 운동 기록",
+          text: "VitalSync 전체 운동 기록 CSV 파일",
+          files: [file],
+        });
+        toast.success("운동 기록을 공유했습니다");
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    toast.success("CSV 파일을 다운로드했습니다");
+  };
+
   return (
     <Card accentColor="slate-blue" className="mb-6 p-0">
       <section aria-labelledby="workout-dashboard-title">
@@ -195,13 +236,23 @@ export default function WorkoutDashboard({ workouts, onAddWorkout, onSelectDate 
               자동 입력된 운동을 주간 추이와 최근 상세 기록으로 한눈에 확인합니다.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onAddWorkout}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--color-slate-blue-500)] px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            <Plus size={15} aria-hidden="true" /> 운동 기록
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={handleShareCsv}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[var(--color-slate-blue-500)]/25 bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-slate-blue-600)] transition-colors hover:bg-[var(--color-slate-blue-500)]/[0.06] dark:bg-transparent dark:text-[var(--color-slate-blue-400)]"
+              aria-label="전체 운동 기록을 CSV 파일로 공유"
+            >
+              <Download size={15} aria-hidden="true" /> CSV 공유
+            </button>
+            <button
+              type="button"
+              onClick={onAddWorkout}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--color-slate-blue-500)] px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <Plus size={15} aria-hidden="true" /> 운동 기록
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-px bg-black/6 dark:bg-white/6 lg:grid-cols-4">
@@ -483,3 +534,4 @@ function WorkoutTooltip({
     </div>
   );
 }
+
